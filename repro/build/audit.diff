@@ -1,0 +1,646 @@
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/data/data_factory.py /Users/ngkky/Data Science/repro/build/conem/model/data/data_factory.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/data/data_factory.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/data/data_factory.py	2026-10-07 17:30:28
+@@ -79,7 +79,9 @@
+             cat_vab = args.cat_vab,
+             num_vab = args.num_vab,
+             static_cat_vab = args.static_cat_vab,
+-            RIN = args.RIN
++            RIN = args.RIN,
++            # test LUÔN stride=1 để định nghĩa metric không đổi
++            stride = 1 if flag == 'test' else getattr(args, 'stride_train', 1)
+             #if_holiday_data=args.if_holiday_data,
+             #if_promo = args.if_promo
+         )
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/data/data_loader.py /Users/ngkky/Data Science/repro/build/conem/model/data/data_loader.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/data/data_loader.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/data/data_loader.py	2026-10-07 17:30:28
+@@ -42,8 +42,10 @@
+                  #if_promo=True
+                  static_cat_vab=[],
+                  #static_cat_vab_context=[]
+-                 RIN=True
++                 RIN=True,
++                 stride=1
+                  ):
++        self.stride = stride
+         self.seq_len = size[0]
+         self.label_len = size[1]
+         self.pred_len = size[2]
+@@ -353,7 +355,7 @@
+                 data_temporal_[:, :] = single_temp[split_start:(split_start+self.seq_len+self.pred_len)].reshape(-1,temporal_index)
+                 data_temporal.append(data_temporal_)
+ 
+-                split_start += 1
++                split_start += self.stride
+         
+         self.data_x = data_x
+         self.data_y = data_y
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/exp/exp_basic.py /Users/ngkky/Data Science/repro/build/conem/model/exp/exp_basic.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/exp/exp_basic.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/exp/exp_basic.py	2026-10-07 17:30:28
+@@ -25,6 +25,9 @@
+                 self.args.gpu) if not self.args.use_multi_gpu else self.args.devices
+             device = torch.device('cuda:{}'.format(self.args.gpu))
+             print('Use GPU: cuda:{}'.format(self.args.gpu))
++        elif getattr(self.args, 'use_mps', False) and torch.backends.mps.is_available():
++            device = torch.device('mps')
++            print('Use MPS (Apple Silicon)')
+         else:
+             device = torch.device('cpu')
+             print('Use CPU')
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/exp/exp_main_ablation.py /Users/ngkky/Data Science/repro/build/conem/model/exp/exp_main_ablation.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/exp/exp_main_ablation.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/exp/exp_main_ablation.py	2026-10-07 17:30:28
+@@ -7,7 +7,7 @@
+ 
+ from model.data.data_factory import data_provider
+ from model.exp.exp_basic import Exp_Basic
+-from model.model.model_without_LoEm import Model #model, model_fedformer,model_autoformer,model_informer
++# [vá C1] Model được import động trong _build_model theo args.model_file
+ from model.utils.tools import EarlyStopping, adjust_learning_rate, pred_quantiles, visual, visualize_individual, save_image
+ from model.utils.metrics import metric
+ from model.utils.metrics import Custom_MAAPE, QuantileLoss
+@@ -32,6 +32,8 @@
+         super(Exp_Main, self).__init__(args)
+ 
+     def _build_model(self):
++        from importlib import import_module
++        Model = import_module('model.model.' + self.args.model_file).Model
+         model = Model(modes=self.args.modes,
+                       seq_len=self.args.seq_len,
+                       label_len=self.args.label_len,
+@@ -119,7 +121,34 @@
+         if self.args.use_amp:
+             scaler = torch.cuda.amp.GradScaler()
+ 
+-        for epoch in range(self.args.train_epochs):
++        # [vá C5 — THÊM BỞI BẢN TÁI HIỆN, không có trong repo tác giả]
++        # Resume cho session bị cắt giữa đường (Colab free). Mặc định TẮT.
++        _start_epoch = 0
++        _res_path = path + '/' + 'resume.pt'
++        if getattr(self.args, 'resume', 0) and os.path.exists(_res_path):
++            # weights_only=False: cần optimizer state + numpy RNG, torch>=2.6 mặc định True
++            _st = torch.load(_res_path, map_location=self.device, weights_only=False)
++            self.model.load_state_dict(_st['model'])
++            model_optim.load_state_dict(_st['optim'])
++            early_stopping.counter = _st['es_counter']
++            early_stopping.best_score = _st['es_best_score']
++            early_stopping.val_loss_min = _st['es_val_loss_min']
++            early_stopping.early_stop = _st['es_early_stop']
++            _start_epoch = _st['next_epoch']
++            try:
++                torch.set_rng_state(_st['rng_torch'].cpu().to(torch.uint8))
++                np.random.set_state(_st['rng_numpy'])
++            except Exception as _e:
++                print('[C5] khong khoi phuc duoc RNG:', _e)
++            if early_stopping.early_stop:
++                print('[C5] run nay da early-stop truoc do, bo qua train')
++                _start_epoch = self.args.train_epochs
++            else:
++                print('[C5] resume tu epoch %d | best vali %.7f | es_counter %d'
++                      % (_start_epoch + 1, early_stopping.val_loss_min,
++                         early_stopping.counter))
++
++        for epoch in range(_start_epoch, self.args.train_epochs):
+             iter_count = 0
+             train_loss = []
+ 
+@@ -195,6 +224,28 @@
+                     scaler.update()
+                 else:
+                     loss.backward()
++                    # [vá C4 — THÊM BỞI BẢN TÁI HIỆN, không có trong repo tác giả]
++                    # 86,7% tham số là số phức nên clip_grad_norm_ không dùng được;
++                    # vector_norm trên view .real/.imag tránh tensor tạm cỡ lớn.
++                    _cg = getattr(self.args, 'clip_grad', 0)
++                    if _cg and _cg > 0:
++                        _sq = None
++                        for _q in self.model.parameters():
++                            if _q.grad is None:
++                                continue
++                            _g = _q.grad
++                            if _g.is_complex():
++                                _n2 = (torch.linalg.vector_norm(_g.real) ** 2
++                                       + torch.linalg.vector_norm(_g.imag) ** 2)
++                            else:
++                                _n2 = torch.linalg.vector_norm(_g) ** 2
++                            _sq = _n2 if _sq is None else _sq + _n2
++                        if _sq is not None:
++                            _co = _cg / (torch.sqrt(_sq) + 1e-6)
++                            if _co < 1:
++                                for _q in self.model.parameters():
++                                    if _q.grad is not None:
++                                        _q.grad.mul_(_co)
+                     model_optim.step()
+ 
+             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+@@ -202,7 +253,7 @@
+             vali_loss = self.vali(vali_data, vali_loader, criterion)
+             
+             # if testing for each epoch
+-            if self.args.if_test:
++            if self.args.if_test and getattr(self.args, 'eval_test_each_epoch', False):
+                 test_loss = self.vali(test_data, test_loader, criterion)
+                 print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
+                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+@@ -212,14 +263,28 @@
+             
+             # if using early stopping based on valid loss
+             early_stopping(vali_loss, self.model, path)
++            # [vá C5] lưu trạng thái resume sau MỖI epoch, không chỉ khi vali giảm.
++            # Ghi ra file tạm rồi os.replace -> không để lại file hỏng nếu bị cắt giữa lúc ghi.
++            if getattr(self.args, 'resume', 0):
++                _tmp = _res_path + '.tmp'
++                torch.save({'next_epoch': epoch + 1,
++                            'model': self.model.state_dict(),
++                            'optim': model_optim.state_dict(),
++                            'es_counter': early_stopping.counter,
++                            'es_best_score': early_stopping.best_score,
++                            'es_val_loss_min': early_stopping.val_loss_min,
++                            'es_early_stop': early_stopping.early_stop,
++                            'rng_torch': torch.get_rng_state(),
++                            'rng_numpy': np.random.get_state()}, _tmp)
++                os.replace(_tmp, _res_path)
+             if early_stopping.early_stop:
+                 print("Early stopping")
+                 break
+ 
+-            #adjust_learning_rate(model_optim, epoch + 1, self.args)
++            adjust_learning_rate(model_optim, epoch + 1, self.args)
+ 
+         best_model_path = path + '/' + 'checkpoint.pth'
+-        self.model.load_state_dict(torch.load(best_model_path,map_location='cuda:0'))
++        self.model.load_state_dict(torch.load(best_model_path,map_location=self.device))
+ 
+         return self.model
+     
+@@ -280,7 +345,7 @@
+         path = os.path.join(self.args.checkpoints, setting)
+         if test:
+             print('loading model')
+-            #self.model.load_state_dict(torch.load('./checkpoints/' + setting + '/checkpoint.pth',map_location='cuda:0'))
++            #self.model.load_state_dict(torch.load('./checkpoints/' + setting + '/checkpoint.pth',map_location=self.device))
+             self.model.load_state_dict(torch.load(path + '/checkpoint.pth'))
+         preds = []
+         trues = []
+@@ -411,7 +476,7 @@
+         if t_load:
+             path = os.path.join(self.args.checkpoints, setting)
+             best_model_path = path + '/' + 'checkpoint.pth'
+-            self.model.load_state_dict(torch.load(best_model_path,map_location='cuda:0'))
++            self.model.load_state_dict(torch.load(best_model_path,map_location=self.device))
+             
+         contexts = []
+         preds = []
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/exp/exp_main_compare.py /Users/ngkky/Data Science/repro/build/conem/model/exp/exp_main_compare.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/exp/exp_main_compare.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/exp/exp_main_compare.py	2026-10-07 17:30:28
+@@ -7,7 +7,7 @@
+ 
+ from model.data.data_factory import data_provider
+ from model.exp.exp_basic import Exp_Basic
+-from model.model.model_info_based import Model #model, model_fedformer,model_autoformer,model_informer, model_info_based
++# [vá C1] Model được import động trong _build_model theo args.model_file
+ from model.utils.tools import EarlyStopping, adjust_learning_rate, pred_quantiles, visual, visualize_individual, save_image
+ from model.utils.metrics import metric
+ from model.utils.metrics import Custom_MAAPE, QuantileLoss
+@@ -32,6 +32,8 @@
+         super(Exp_Main, self).__init__(args)
+ 
+     def _build_model(self):
++        from importlib import import_module
++        Model = import_module('model.model.' + self.args.model_file).Model
+         model = Model(modes=self.args.modes,
+                       seq_len=self.args.seq_len,
+                       label_len=self.args.label_len,
+@@ -119,7 +121,34 @@
+         if self.args.use_amp:
+             scaler = torch.cuda.amp.GradScaler()
+ 
+-        for epoch in range(self.args.train_epochs):
++        # [vá C5 — THÊM BỞI BẢN TÁI HIỆN, không có trong repo tác giả]
++        # Resume cho session bị cắt giữa đường (Colab free). Mặc định TẮT.
++        _start_epoch = 0
++        _res_path = path + '/' + 'resume.pt'
++        if getattr(self.args, 'resume', 0) and os.path.exists(_res_path):
++            # weights_only=False: cần optimizer state + numpy RNG, torch>=2.6 mặc định True
++            _st = torch.load(_res_path, map_location=self.device, weights_only=False)
++            self.model.load_state_dict(_st['model'])
++            model_optim.load_state_dict(_st['optim'])
++            early_stopping.counter = _st['es_counter']
++            early_stopping.best_score = _st['es_best_score']
++            early_stopping.val_loss_min = _st['es_val_loss_min']
++            early_stopping.early_stop = _st['es_early_stop']
++            _start_epoch = _st['next_epoch']
++            try:
++                torch.set_rng_state(_st['rng_torch'].cpu().to(torch.uint8))
++                np.random.set_state(_st['rng_numpy'])
++            except Exception as _e:
++                print('[C5] khong khoi phuc duoc RNG:', _e)
++            if early_stopping.early_stop:
++                print('[C5] run nay da early-stop truoc do, bo qua train')
++                _start_epoch = self.args.train_epochs
++            else:
++                print('[C5] resume tu epoch %d | best vali %.7f | es_counter %d'
++                      % (_start_epoch + 1, early_stopping.val_loss_min,
++                         early_stopping.counter))
++
++        for epoch in range(_start_epoch, self.args.train_epochs):
+             iter_count = 0
+             train_loss = []
+ 
+@@ -195,6 +224,28 @@
+                     scaler.update()
+                 else:
+                     loss.backward()
++                    # [vá C4 — THÊM BỞI BẢN TÁI HIỆN, không có trong repo tác giả]
++                    # 86,7% tham số là số phức nên clip_grad_norm_ không dùng được;
++                    # vector_norm trên view .real/.imag tránh tensor tạm cỡ lớn.
++                    _cg = getattr(self.args, 'clip_grad', 0)
++                    if _cg and _cg > 0:
++                        _sq = None
++                        for _q in self.model.parameters():
++                            if _q.grad is None:
++                                continue
++                            _g = _q.grad
++                            if _g.is_complex():
++                                _n2 = (torch.linalg.vector_norm(_g.real) ** 2
++                                       + torch.linalg.vector_norm(_g.imag) ** 2)
++                            else:
++                                _n2 = torch.linalg.vector_norm(_g) ** 2
++                            _sq = _n2 if _sq is None else _sq + _n2
++                        if _sq is not None:
++                            _co = _cg / (torch.sqrt(_sq) + 1e-6)
++                            if _co < 1:
++                                for _q in self.model.parameters():
++                                    if _q.grad is not None:
++                                        _q.grad.mul_(_co)
+                     model_optim.step()
+ 
+             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+@@ -202,7 +253,7 @@
+             vali_loss = self.vali(vali_data, vali_loader, criterion)
+             
+             # if testing for each epoch
+-            if self.args.if_test:
++            if self.args.if_test and getattr(self.args, 'eval_test_each_epoch', False):
+                 test_loss = self.vali(test_data, test_loader, criterion)
+                 print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
+                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+@@ -212,14 +263,28 @@
+             
+             # if using early stopping based on valid loss
+             early_stopping(vali_loss, self.model, path)
++            # [vá C5] lưu trạng thái resume sau MỖI epoch, không chỉ khi vali giảm.
++            # Ghi ra file tạm rồi os.replace -> không để lại file hỏng nếu bị cắt giữa lúc ghi.
++            if getattr(self.args, 'resume', 0):
++                _tmp = _res_path + '.tmp'
++                torch.save({'next_epoch': epoch + 1,
++                            'model': self.model.state_dict(),
++                            'optim': model_optim.state_dict(),
++                            'es_counter': early_stopping.counter,
++                            'es_best_score': early_stopping.best_score,
++                            'es_val_loss_min': early_stopping.val_loss_min,
++                            'es_early_stop': early_stopping.early_stop,
++                            'rng_torch': torch.get_rng_state(),
++                            'rng_numpy': np.random.get_state()}, _tmp)
++                os.replace(_tmp, _res_path)
+             if early_stopping.early_stop:
+                 print("Early stopping")
+                 break
+ 
+-            #adjust_learning_rate(model_optim, epoch + 1, self.args)
++            adjust_learning_rate(model_optim, epoch + 1, self.args)
+ 
+         best_model_path = path + '/' + 'checkpoint.pth'
+-        self.model.load_state_dict(torch.load(best_model_path,map_location='cuda:0'))
++        self.model.load_state_dict(torch.load(best_model_path,map_location=self.device))
+ 
+         return self.model
+     
+@@ -280,7 +345,7 @@
+         path = os.path.join(self.args.checkpoints, setting)
+         if test:
+             print('loading model')
+-            #self.model.load_state_dict(torch.load('./checkpoints/' + setting + '/checkpoint.pth',map_location='cuda:0'))
++            #self.model.load_state_dict(torch.load('./checkpoints/' + setting + '/checkpoint.pth',map_location=self.device))
+             self.model.load_state_dict(torch.load(path + '/checkpoint.pth'))
+         preds = []
+         trues = []
+@@ -423,7 +488,7 @@
+         if t_load:
+             path = os.path.join(self.args.checkpoints, setting)
+             best_model_path = path + '/' + 'checkpoint.pth'
+-            self.model.load_state_dict(torch.load(best_model_path,map_location='cuda:0'))
++            self.model.load_state_dict(torch.load(best_model_path,map_location=self.device))
+             
+         contexts = []
+         preds = []
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/exp/exp_main_without_ext.py /Users/ngkky/Data Science/repro/build/conem/model/exp/exp_main_without_ext.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/exp/exp_main_without_ext.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/exp/exp_main_without_ext.py	2026-10-07 17:30:28
+@@ -7,7 +7,7 @@
+ 
+ from model.data.data_factory_without_ext import data_provider
+ from model.exp.exp_basic import Exp_Basic
+-from model.model.model_informer import Model #model, model_fedformer,model_autoformer,model_informer
++# [vá C1] Model được import động trong _build_model theo args.model_file
+ from model.utils.tools import EarlyStopping, adjust_learning_rate, pred_quantiles, visual, visualize_individual, save_image
+ from model.utils.metrics import metric
+ from model.utils.metrics import Custom_MAAPE, QuantileLoss
+@@ -32,6 +32,8 @@
+         super(Exp_Main, self).__init__(args)
+ 
+     def _build_model(self):
++        from importlib import import_module
++        Model = import_module('model.model.' + self.args.model_file).Model
+         model = Model(modes=self.args.modes,
+                       seq_len=self.args.seq_len,
+                       label_len=self.args.label_len,
+@@ -119,7 +121,34 @@
+         if self.args.use_amp:
+             scaler = torch.cuda.amp.GradScaler()
+ 
+-        for epoch in range(self.args.train_epochs):
++        # [vá C5 — THÊM BỞI BẢN TÁI HIỆN, không có trong repo tác giả]
++        # Resume cho session bị cắt giữa đường (Colab free). Mặc định TẮT.
++        _start_epoch = 0
++        _res_path = path + '/' + 'resume.pt'
++        if getattr(self.args, 'resume', 0) and os.path.exists(_res_path):
++            # weights_only=False: cần optimizer state + numpy RNG, torch>=2.6 mặc định True
++            _st = torch.load(_res_path, map_location=self.device, weights_only=False)
++            self.model.load_state_dict(_st['model'])
++            model_optim.load_state_dict(_st['optim'])
++            early_stopping.counter = _st['es_counter']
++            early_stopping.best_score = _st['es_best_score']
++            early_stopping.val_loss_min = _st['es_val_loss_min']
++            early_stopping.early_stop = _st['es_early_stop']
++            _start_epoch = _st['next_epoch']
++            try:
++                torch.set_rng_state(_st['rng_torch'].cpu().to(torch.uint8))
++                np.random.set_state(_st['rng_numpy'])
++            except Exception as _e:
++                print('[C5] khong khoi phuc duoc RNG:', _e)
++            if early_stopping.early_stop:
++                print('[C5] run nay da early-stop truoc do, bo qua train')
++                _start_epoch = self.args.train_epochs
++            else:
++                print('[C5] resume tu epoch %d | best vali %.7f | es_counter %d'
++                      % (_start_epoch + 1, early_stopping.val_loss_min,
++                         early_stopping.counter))
++
++        for epoch in range(_start_epoch, self.args.train_epochs):
+             iter_count = 0
+             train_loss = []
+ 
+@@ -195,6 +224,28 @@
+                     scaler.update()
+                 else:
+                     loss.backward()
++                    # [vá C4 — THÊM BỞI BẢN TÁI HIỆN, không có trong repo tác giả]
++                    # 86,7% tham số là số phức nên clip_grad_norm_ không dùng được;
++                    # vector_norm trên view .real/.imag tránh tensor tạm cỡ lớn.
++                    _cg = getattr(self.args, 'clip_grad', 0)
++                    if _cg and _cg > 0:
++                        _sq = None
++                        for _q in self.model.parameters():
++                            if _q.grad is None:
++                                continue
++                            _g = _q.grad
++                            if _g.is_complex():
++                                _n2 = (torch.linalg.vector_norm(_g.real) ** 2
++                                       + torch.linalg.vector_norm(_g.imag) ** 2)
++                            else:
++                                _n2 = torch.linalg.vector_norm(_g) ** 2
++                            _sq = _n2 if _sq is None else _sq + _n2
++                        if _sq is not None:
++                            _co = _cg / (torch.sqrt(_sq) + 1e-6)
++                            if _co < 1:
++                                for _q in self.model.parameters():
++                                    if _q.grad is not None:
++                                        _q.grad.mul_(_co)
+                     model_optim.step()
+ 
+             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
+@@ -202,7 +253,7 @@
+             vali_loss = self.vali(vali_data, vali_loader, criterion)
+             
+             # if testing for each epoch
+-            if self.args.if_test:
++            if self.args.if_test and getattr(self.args, 'eval_test_each_epoch', False):
+                 test_loss = self.vali(test_data, test_loader, criterion)
+                 print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
+                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
+@@ -212,14 +263,28 @@
+             
+             # if using early stopping based on valid loss
+             early_stopping(vali_loss, self.model, path)
++            # [vá C5] lưu trạng thái resume sau MỖI epoch, không chỉ khi vali giảm.
++            # Ghi ra file tạm rồi os.replace -> không để lại file hỏng nếu bị cắt giữa lúc ghi.
++            if getattr(self.args, 'resume', 0):
++                _tmp = _res_path + '.tmp'
++                torch.save({'next_epoch': epoch + 1,
++                            'model': self.model.state_dict(),
++                            'optim': model_optim.state_dict(),
++                            'es_counter': early_stopping.counter,
++                            'es_best_score': early_stopping.best_score,
++                            'es_val_loss_min': early_stopping.val_loss_min,
++                            'es_early_stop': early_stopping.early_stop,
++                            'rng_torch': torch.get_rng_state(),
++                            'rng_numpy': np.random.get_state()}, _tmp)
++                os.replace(_tmp, _res_path)
+             if early_stopping.early_stop:
+                 print("Early stopping")
+                 break
+ 
+-            #adjust_learning_rate(model_optim, epoch + 1, self.args)
++            adjust_learning_rate(model_optim, epoch + 1, self.args)
+ 
+         best_model_path = path + '/' + 'checkpoint.pth'
+-        self.model.load_state_dict(torch.load(best_model_path,map_location='cuda:0'))
++        self.model.load_state_dict(torch.load(best_model_path,map_location=self.device))
+ 
+         return self.model
+     
+@@ -280,7 +345,7 @@
+         path = os.path.join(self.args.checkpoints, setting)
+         if test:
+             print('loading model')
+-            #self.model.load_state_dict(torch.load('./checkpoints/' + setting + '/checkpoint.pth',map_location='cuda:0'))
++            #self.model.load_state_dict(torch.load('./checkpoints/' + setting + '/checkpoint.pth',map_location=self.device))
+             self.model.load_state_dict(torch.load(path + '/checkpoint.pth'))
+         preds = []
+         trues = []
+@@ -411,7 +476,7 @@
+         if t_load:
+             path = os.path.join(self.args.checkpoints, setting)
+             best_model_path = path + '/' + 'checkpoint.pth'
+-            self.model.load_state_dict(torch.load(best_model_path,map_location='cuda:0'))
++            self.model.load_state_dict(torch.load(best_model_path,map_location=self.device))
+             
+         contexts = []
+         preds = []
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_autoformer.py /Users/ngkky/Data Science/repro/build/conem/model/model/model_autoformer.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_autoformer.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/model/model_autoformer.py	2026-10-07 17:30:28
+@@ -1,17 +1,17 @@
+ import os
+-print(os.getcwd())
+ 
+-os.chdir("/home/ad/20813716/transformer_sales_forecast/model")
+ 
++# [vá A4] os.chdir sang máy tác giả — đã vô hiệu
++
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+-from layers.Embed import DataEmbedding_wo_pos
+-from layers.AutoCorrelation import AutoCorrelation, AutoCorrelationLayer
+-from layers.FourierCorrelation import FourierBlock, FourierCrossAttention
+-from layers.MultiWaveletCorrelation import MultiWaveletCross, MultiWaveletTransform
+-from layers.SelfAttention import FullAttention, ProbAttention
+-from layers.EncDecLayer import Encoder, Decoder, EncoderLayer, DecoderLayer, my_Layernorm, series_decomp, series_decomp_multi
++from model.layers.Embed import DataEmbedding_wo_pos
++from model.layers.AutoCorrelation import AutoCorrelation, AutoCorrelationLayer
++from model.layers.FourierCorrelation import FourierBlock, FourierCrossAttention
++from model.layers.MultiWaveletCorrelation import MultiWaveletCross, MultiWaveletTransform
++from model.layers.SelfAttention import FullAttention, ProbAttention
++from model.layers.EncDecLayer import Encoder, Decoder, EncoderLayer, DecoderLayer, my_Layernorm, series_decomp, series_decomp_multi
+ import math
+ import numpy as np
+ 
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_fed_based.py /Users/ngkky/Data Science/repro/build/conem/model/model/model_fed_based.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_fed_based.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/model/model_fed_based.py	2026-10-07 17:30:28
+@@ -104,9 +104,9 @@
+             self.decomp = series_decomp(kernel_size)
+ 
+         ## Embedding Autoformer
+-        self.enc_embedding = DataEmbedding_encoder(enc_in, d_model, embed, freq,
++        self.enc_embedding = DataEmbedding_encoder(enc_in, d_model, static_d_token, contextual_encoder_d_token, embed, freq,
+                                                   dropout,len(cat_vab),len(num_vab)-1,len(static_vab))
+-        self.dec_embedding = DataEmbedding_decoder(dec_in, d_model, embed, freq,
++        self.dec_embedding = DataEmbedding_decoder(dec_in, d_model, static_d_token, contextual_decoder_d_token, embed, freq,
+                                                   dropout,len(cat_vab),len(num_vab)-1,len(static_vab))
+ 
+         ## Self encoding by Wavelet transformer   
+@@ -273,7 +273,8 @@
+             x_static_enc = torch.add(x_static_enc/x_static_enc.shape[2],-0.5)
+             #print('NEW REVIN')
+             #x_enc = x_enc*(torch.add(torch.sum(self.affine_weight_input*x_static_enc,dim=2,keepdim=True),1)) + torch.sum(self.affine_bias_input*x_static_enc,dim=2,keepdim=True)
+-            x_enc = x_enc*torch.sum(self.affine_weight_input*x_static_enc,dim=2,keepdim=True) + torch.sum(self.affine_bias_input*x_static_enc,dim=2,keepdim=True)
++            # [vá A6fix] dạng "1 + phần học được", chính là dòng tác giả đã comment ở trên
++            x_enc = x_enc*(torch.add(torch.sum(self.affine_weight_input*x_static_enc,dim=2,keepdim=True),1)) + torch.sum(self.affine_bias_input*x_static_enc,dim=2,keepdim=True)
+         #### CONEM
+         ## Input Embedding
+         # Encoder
+@@ -353,7 +354,7 @@
+                 #print(add_on.shape)
+                 x_past_context_init = torch.cat([x_past_context,add_on], dim=1)
+                 #print(x_past_context_init.shape)
+-        dec_out = self.dec_embedding(seasonal_init, x_mark_dec,x_temporal_dec,x_static_dec,x_past_context_init)
++        dec_out, x_future_context = self.dec_embedding(seasonal_init, x_mark_dec,x_temporal_dec,x_static_dec,x_past_context_init)
+         seasonal_part, trend_part = self.decoder(dec_out, enc_out, x_mask=dec_self_mask, cross_mask=dec_enc_mask,
+                                                  trend=trend_init)
+         #### Final Forecast
+@@ -370,7 +371,8 @@
+             # Final Dec out
+             x_static_dec = torch.add(x_static_dec/x_static_dec.shape[2],-0.5)
+             dec_out = dec_out - torch.sum(self.affine_bias_input*x_static_dec[:,-self.pred_len:,:],dim=2,keepdim=True)
+-            dec_out = dec_out/torch.sum(self.affine_weight_input*x_static_dec[:,-self.pred_len:,:],dim=2,keepdim=True)
++            # [vá A6fix] mẫu số khớp chiều chuẩn hoá: (sum + 1), luôn quanh 1
++            dec_out = dec_out/(torch.sum(self.affine_weight_input*x_static_dec[:,-self.pred_len:,:],dim=2,keepdim=True) + 1)
+             #dec_out = dec_out - self.affine_bias_input
+             #dec_out = dec_out/self.affine_weight_input
+             dec_out = dec_out * stdev
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_fedformer.py /Users/ngkky/Data Science/repro/build/conem/model/model/model_fedformer.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_fedformer.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/model/model_fedformer.py	2026-10-07 17:30:28
+@@ -1,17 +1,17 @@
+ import os
+-print(os.getcwd())
+ 
+-os.chdir("/home/ad/20813716/transformer_sales_forecast/model")
+ 
++# [vá A4] os.chdir sang máy tác giả — đã vô hiệu
++
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+-from layers.Embed import DataEmbedding_wo_pos
+-from layers.AutoCorrelation import AutoCorrelation, AutoCorrelationLayer
+-from layers.FourierCorrelation import FourierBlock, FourierCrossAttention
+-from layers.MultiWaveletCorrelation import MultiWaveletCross, MultiWaveletTransform
+-from layers.SelfAttention import FullAttention, ProbAttention
+-from layers.EncDecLayer import Encoder, Decoder, EncoderLayer, DecoderLayer, my_Layernorm, series_decomp, series_decomp_multi
++from model.layers.Embed import DataEmbedding_wo_pos
++from model.layers.AutoCorrelation import AutoCorrelation, AutoCorrelationLayer
++from model.layers.FourierCorrelation import FourierBlock, FourierCrossAttention
++from model.layers.MultiWaveletCorrelation import MultiWaveletCross, MultiWaveletTransform
++from model.layers.SelfAttention import FullAttention, ProbAttention
++from model.layers.EncDecLayer import Encoder, Decoder, EncoderLayer, DecoderLayer, my_Layernorm, series_decomp, series_decomp_multi
+ import math
+ import numpy as np
+ 
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_informer.py /Users/ngkky/Data Science/repro/build/conem/model/model/model_informer.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_informer.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/model/model_informer.py	2026-10-07 17:30:28
+@@ -1,17 +1,17 @@
+ import os
+-print(os.getcwd())
+ 
+-os.chdir("/home/ad/20813716/transformer_sales_forecast/model")
+ 
++# [vá A4] os.chdir sang máy tác giả — đã vô hiệu
++
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+-from layers.Embed import DataEmbedding
+-from layers.AutoCorrelation import AutoCorrelation, AutoCorrelationLayer
+-from layers.FourierCorrelation import FourierBlock, FourierCrossAttention
+-from layers.MultiWaveletCorrelation import MultiWaveletCross, MultiWaveletTransform
+-from layers.SelfAttention import FullAttention, ProbAttention
+-from layers.EncDecLayer import Encoder, Decoder, EncoderLayer, DecoderLayer, my_Layernorm, series_decomp, series_decomp_multi
++from model.layers.Embed import DataEmbedding
++from model.layers.AutoCorrelation import AutoCorrelation, AutoCorrelationLayer
++from model.layers.FourierCorrelation import FourierBlock, FourierCrossAttention
++from model.layers.MultiWaveletCorrelation import MultiWaveletCross, MultiWaveletTransform
++from model.layers.SelfAttention import FullAttention, ProbAttention
++from model.layers.EncDecLayer import Encoder, Decoder, EncoderLayer, DecoderLayer, my_Layernorm, series_decomp, series_decomp_multi
+ import math
+ import numpy as np
+ 
+@@ -22,10 +22,10 @@
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+-from utils.masking import TriangularCausalMask, ProbMask
+-from layers.Transformer_EncDec import Decoder, DecoderLayer, Encoder, EncoderLayer, ConvLayer
+-from layers.SelfAttention import FullAttention, ProbAttention, AttentionLayer
+-from layers.Embed import DataEmbedding
++from model.utils.masking import TriangularCausalMask, ProbMask
++from model.layers.Transformer_EncDec import Decoder, DecoderLayer, Encoder, EncoderLayer, ConvLayer
++from model.layers.SelfAttention import FullAttention, ProbAttention, AttentionLayer
++from model.layers.Embed import DataEmbedding
+ import numpy as np
+ 
+ 
+diff -ru --exclude=__pycache__ --exclude=.git /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_without_FuEm.py /Users/ngkky/Data Science/repro/build/conem/model/model/model_without_FuEm.py
+--- /Users/ngkky/Data Science/repro/upstream/conem/model/model/model_without_FuEm.py	2026-10-01 19:51:13
++++ /Users/ngkky/Data Science/repro/build/conem/model/model/model_without_FuEm.py	2026-10-07 17:30:28
+@@ -18,10 +18,9 @@
+ from model.layers.EncDecLayer import Encoder, Decoder, EncoderLayer, DecoderLayer, my_Layernorm, series_decomp, series_decomp_multi
+ 
+ # Custom Embedding
+-#from model.layers.Embed import Customize_Tokenizer
+-#import torch.nn.init as nn_init
+-#import math
+-
++from model.layers.Embed import Customize_Tokenizer
++import torch.nn.init as nn_init
++import math
+ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+ 
+ EPSILON = 1e-10
