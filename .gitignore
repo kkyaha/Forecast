@@ -1,0 +1,12 @@
+.venv/
+repro/
+.DS_Store
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+repro/
+.DS_Store
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
