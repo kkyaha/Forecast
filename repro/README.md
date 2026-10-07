@@ -99,8 +99,10 @@ logs/ results/ checkpoints/  kết quả chạy
 python3 -m venv ../.venv
 ../.venv/bin/python -m pip install -r requirements.txt
 
-# 2. code tác giả
+# 2. code tác giả — KHÔNG nằm trong repo này, phải tự clone và pin commit
 git clone https://github.com/anonymous7594/conem upstream/conem
+git -C upstream/conem checkout 80f0e01c40e2608b9a838771bb1f308b2aa76ae1
+git -C upstream/conem status --porcelain   # trống = chưa bị sửa
 
 # 3. dựng bản làm việc
 python ours/build.py --audit

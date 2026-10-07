@@ -3,11 +3,18 @@
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
-.venv/
-.DS_Store
-__pycache__/
-*.pyc
-.ipynb_checkpoints/
+
+# Code TÁC GIẢ — không theo dõi ở repo này.
+# Trước đây nó bị commit làm gitlink 160000 mà không có .gitmodules, nên clone ra
+# thư mục rỗng và URL không được ghi lại ở đâu — đúng lỗi mà repo tác giả ConEm mắc
+# (submodule transformer_sales_forecast -> 6cf0e0d2, xoá ở commit 2, không .gitmodules).
+# Lấy lại bằng:
+#   git clone https://github.com/anonymous7594/conem repro/upstream/conem
+#   git -C repro/upstream/conem checkout 80f0e01c40e2608b9a838771bb1f308b2aa76ae1
+repro/upstream/
+
+# Bản backup, không cần theo dõi
+repro/.backup/
 
 # Bỏ qua các file dữ liệu và mô hình trong repro
 repro/**/*.csv
