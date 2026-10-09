@@ -171,7 +171,12 @@ def build_args():
     p.add_argument('--seed', type=int, default=2021)
 
     # --- thiết bị ---
-    p.add_argument('--use_gpu', type=int, default=0)   # không có CUDA trên macOS
+    # THÊM BỞI BẢN TÁI HIỆN — tự nhận biết CUDA thay vì hardcode 0.
+    # exp_basic._acquire_device() thử theo thứ tự: use_gpu -> use_mps -> CPU.
+    # use_gpu=0 cứng (bản cũ) đúng trên Mac (không CUDA) nhưng SAI trên Colab:
+    # use_mps=1 không cứu được vì torch.backends.mps.is_available() luôn False trên
+    # máy Linux+CUDA, nên rơi thẳng xuống CPU dù có GPU T4 đang rảnh.
+    p.add_argument('--use_gpu', type=int, default=int(torch.cuda.is_available()))
     p.add_argument('--use_mps', type=int, default=1)
     p.add_argument('--gpu', type=int, default=0)
     p.add_argument('--use_multi_gpu', action='store_true')
