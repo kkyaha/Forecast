@@ -1,8 +1,12 @@
 .venv/
 .DS_Store
 __pycache__/
+practice/
 *.pyc
 .ipynb_checkpoints/
+
+# Slide bài giảng, không phải code của mình
+Lesson-5-time series forecasting.pdf
 
 # Code TÁC GIẢ — không theo dõi ở repo này.
 # Trước đây nó bị commit làm gitlink 160000 mà không có .gitmodules, nên clone ra
