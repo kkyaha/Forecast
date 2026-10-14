@@ -20,13 +20,19 @@ repro/upstream/
 # Bản backup, không cần theo dõi
 repro/.backup/
 
-# Bỏ qua các file dữ liệu và mô hình trong repro
+# Bỏ qua các file dữ liệu và mô hình trong repro — chỉ giữ code (.py, .ipynb, .sh, .json config)
 repro/**/*.csv
 repro/**/*.parquet
 repro/**/*.pkl
 repro/**/*.h5
+repro/**/*.hickle
+repro/**/*.hkl
+repro/**/*.edf
+repro/**/*.npy
+repro/**/*.npz
 repro/**/*.pt
 repro/**/*.pth
+repro/**/*.ckpt
 repro/**/*.tar.gz
 repro/**/*.zip
 repro/**/wandb/
@@ -35,3 +41,6 @@ repro/**/checkpoints/
 repro/**/results/
 repro/**/output/
 repro/**/data/
+repro/**/Dataset/
+repro/**/cachedir*/
+repro/**/pytorch_models/
