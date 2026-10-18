@@ -142,15 +142,28 @@ class MackeyGlass(Dataset):
 
         return sample, target
 class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, num_layers=2):
+    def __init__(self, input_size, hidden_size, output_size, num_layers=2, cell_type='rnn'):
         super(RNN, self).__init__()
-        self.rnn = nn.RNN(input_size, hidden_size, num_layers, batch_first=True, dropout=0.2)
+        cell_type = cell_type.lower()
+        self.cell_type = cell_type
+        if cell_type == 'rnn':
+            self.rnn = nn.RNN(input_size, hidden_size, num_layers, batch_first=True, dropout=0.2)
+        elif cell_type == 'lstm':
+            self.rnn = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True, dropout=0.2)
+        elif cell_type == 'gru':
+            self.rnn = nn.GRU(input_size, hidden_size, num_layers, batch_first=True, dropout=0.2)
+        else:
+            raise ValueError(f"Unknown cell_type: {cell_type!r} (expected 'rnn', 'lstm', or 'gru')")
         self.fc1 = nn.Linear(hidden_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
         h0 = torch.zeros(self.rnn.num_layers, x.size(0), self.rnn.hidden_size).to(x.device)
-        out, hidden = self.rnn(x, h0)
+        if self.cell_type == 'lstm':
+            c0 = torch.zeros(self.rnn.num_layers, x.size(0), self.rnn.hidden_size).to(x.device)
+            out, hidden = self.rnn(x, (h0, c0))
+        else:
+            out, hidden = self.rnn(x, h0)
         out = self.fc1(out[:, -1, :])
         out = nn.functional.relu(out)
         out = self.fc2(out)

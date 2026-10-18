@@ -36,12 +36,12 @@ class EarlyStopper:
 def train_student_model(student_horizon, alpha, num_bins,
                         val_size, test_size, epochs,
                         temperature, lookback_window, batch_size,
-                        patience=5, seed=42):
+                        patience=5, seed=42, arch='rnn'):
     torch.manual_seed(seed)
     print(f"\nTraining | Horizon={student_horizon} Alpha={alpha} "
           f"Num bins={num_bins} Val size={val_size} Test size={test_size}"
           f"Epochs={epochs} Temp={temperature} "
-          f"Lookback={lookback_window} Batch={batch_size}")
+          f"Lookback={lookback_window} Batch={batch_size} Arch={arch}")
 
     # hyperparams
     hidden_size   = 128
@@ -80,7 +80,7 @@ def train_student_model(student_horizon, alpha, num_bins,
     celoss= nn.CrossEntropyLoss()
 
     # ---- Teacher loop with early stopping ----
-    teacher     = RNN(lookback_window, hidden_size, output_size, num_layers).to(device)
+    teacher     = RNN(lookback_window, hidden_size, output_size, num_layers, cell_type=arch).to(device)
     opt_t       = torch.optim.Adam(teacher.parameters(), lr=lr)
     stop_t      = EarlyStopper(patience=patience)
     for epoch in range(epochs):
@@ -111,7 +111,7 @@ def train_student_model(student_horizon, alpha, num_bins,
     print(f"[Teacher] Best Val CE = {stop_t.best_loss:.4f}")
 
     # ---- Baseline loop with early stopping ----
-    baseline   = RNN(lookback_window, hidden_size, output_size, num_layers).to(device)
+    baseline   = RNN(lookback_window, hidden_size, output_size, num_layers, cell_type=arch).to(device)
     opt_b      = torch.optim.Adam(baseline.parameters(), lr=lr)
     stop_b     = EarlyStopper(patience=patience)
     for epoch in range(epochs):
@@ -142,7 +142,7 @@ def train_student_model(student_horizon, alpha, num_bins,
     print(f"[Baseline] Best Val CE = {stop_b.best_loss:.4f}")
 
     # ---- Student + distillation loop w/ early stopping ----
-    student = RNN(lookback_window, hidden_size, output_size, num_layers).to(device)
+    student = RNN(lookback_window, hidden_size, output_size, num_layers, cell_type=arch).to(device)
     opt_s    = torch.optim.Adam(student.parameters(), lr=lr)
     stop_s   = EarlyStopper(patience=patience)
 
@@ -221,6 +221,9 @@ if __name__ == "__main__":
                         help="Fraction of data for testing")
     parser.add_argument("--seed", type=int, default=42,
                         help="Random seed")
+    parser.add_argument("--arch", type=str, default="rnn", choices=["rnn", "lstm", "gru"],
+                        help="Recurrent cell for Teacher/Baseline/Student (default: rnn, "
+                             "matches the author's original architecture)")
 
     args = parser.parse_args()
 
@@ -234,5 +237,6 @@ if __name__ == "__main__":
         seed              = args.seed,
         temperature       = args.temperature,
         lookback_window   = args.lookback_window,
-        batch_size        = args.batch_size
+        batch_size        = args.batch_size,
+        arch              = args.arch
     )

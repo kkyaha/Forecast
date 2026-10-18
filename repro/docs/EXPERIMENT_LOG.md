@@ -190,6 +190,85 @@ Thời gian thực tế: toàn bộ 14 horizon chạy xong trong vài phút (mod
 
 ---
 
+## Lần chạy 4 — So sánh kiến trúc RNN vs LSTM vs GRU (tự đề xuất cải tiến)
+
+### Động cơ
+
+Tác giả dùng RNN vanilla (`nn.RNN`) cho cả Teacher/Baseline/Student trên Mackey-Glass —
+kiến trúc đơn giản nhất trong họ hồi quy, dễ gặp vanishing/exploding gradient hơn LSTM/GRU.
+Đây là phần **tự đề xuất cải tiến** (không có trong code hay paper gốc), nhằm kiểm tra: kiến
+trúc mạnh hơn có giúp FGL cải thiện nhiều hơn không, hay mức cải thiện tương đối giữa
+Baseline/Student là bất biến theo kiến trúc.
+
+### Thay đổi code
+
+Tham số hoá `class RNN` trong `build/mackey_glass/utils/utils.py` bằng `cell_type ∈
+{rnn, lstm, gru}` (mặc định `'rnn'`, không đổi hành vi cũ), và thêm cờ `--arch` vào
+`exp/base_exp.py`, áp dụng **cùng kiến trúc cho cả Teacher/Baseline/Student** (giữ đúng
+nguyên tắc "1 họ kiến trúc dùng chung" của paper, chỉ đổi loại cell). Đã xác nhận
+`--arch rnn` cho ra đúng số liệu y hệt Lần chạy 1 (Teacher 5.4391, Baseline 139.3832,
+Student 104.3942) trước khi chạy thử LSTM/GRU — đảm bảo refactor không làm lệch kết quả gốc.
+
+### Lệnh chạy (từ `repro/build/mackey_glass/`)
+
+```
+for arch in lstm gru; do
+  for s in 0 1 2 3 4 42; do
+    PYTHONPATH=. python exp/base_exp.py --horizon 5 --num_bins 50 --alpha 0.5 --epochs 20 --arch $arch --seed $s
+  done
+done
+```
+
+### Kết quả — LSTM (6 seed)
+
+| seed | Teacher MSE | Baseline MSE | Student MSE | Giảm MSE (Baseline→Student) |
+|---|---|---|---|---|
+| 0  | 4,1850 | 145,4412 | 92,5198 | **36,39%** |
+| 1  | 4,6782 | 138,9365 | 89,1096 | **35,86%** |
+| 2  | 4,6281 | 142,7424 | 94,6453 | **33,70%** |
+| 3  | 4,1689 | 139,3032 | 92,2201 | **33,80%** |
+| 4  | 4,7799 | 143,8094 | 98,7154 | **31,36%** |
+| 42 | 4,4145 | 144,6108 | 97,3967 | **32,65%** |
+| **Trung bình** | 4,476 | 142,477 | 94,101 | **33,96% (±1,74 std)** |
+
+### Kết quả — GRU (6 seed)
+
+| seed | Teacher MSE | Baseline MSE | Student MSE | Giảm MSE (Baseline→Student) |
+|---|---|---|---|---|
+| 0  | 4,4406 | 143,1596 | 98,4052 | **31,26%** |
+| 1  | 4,5018 | 142,7224 | 98,0985 | **31,27%** |
+| 2  | 4,2662 | 140,9470 | 94,1331 | **33,21%** |
+| 3  | 4,2195 | 146,1191 | 97,3077 | **33,41%** |
+| 4  | 4,4276 | 143,0985 | 87,6893 | **38,72%** |
+| 42 | 4,7373 | 142,0975 | 98,7189 | **30,53%** |
+| **Trung bình** | 4,432 | 142,197 | 95,726 | **33,07% (±2,74 std)** |
+
+### So sánh 3 kiến trúc (trung bình 6 seed)
+
+| Kiến trúc | Giảm MSE trung bình | So với RNN |
+|---|---|---|
+| RNN (gốc tác giả) | 26,42% (±3,86) | — |
+| **LSTM** | **33,96% (±1,74)** | **+7,54 điểm %** |
+| **GRU** | **33,07% (±2,74)** | **+6,65 điểm %** |
+
+### Nhận định
+
+- **Cả LSTM và GRU đều cải thiện trên 6/6 seed**, không có ngoại lệ — kết quả ổn định, không
+  phải may rủi của 1 seed cụ thể.
+- **LSTM nhỉnh hơn GRU** cả về mức cải thiện trung bình (33,96% vs 33,07%) lẫn độ ổn định
+  (std 1,74 vs 2,74) — hợp lý vì LSTM có thêm cổng quên/nhớ (forget/cell gate) kiểm soát
+  dòng thông tin tốt hơn GRU trên chuỗi có tính hỗn loạn cao như Mackey-Glass.
+- **MSE của Teacher cũng giảm rõ rệt** khi đổi kiến trúc (RNN ~5,86 trung bình ở Lần chạy 2
+  → LSTM ~4,48 → GRU ~4,43) — tức bản thân nhiệm vụ dự báo 1-bước (của Teacher) cũng dễ hơn
+  với kiến trúc mạnh hơn, không chỉ nhiệm vụ H-bước (của Student).
+- **Kết luận cải tiến**: đổi kiến trúc hồi quy từ RNN vanilla sang LSTM là một cải tiến đơn
+  giản (chỉ đổi 1 tham số dòng lệnh, không đổi logic FGL/KD) nhưng mang lại cải thiện đáng
+  kể và nhất quán — phù hợp để đưa vào phần "đóng góp thêm" của báo cáo, đi kèm lưu ý: đây
+  là thử nghiệm tự đề xuất, không có trong paper gốc, nên trình bày rõ ràng là phần mở rộng
+  của người làm tiểu luận, không phải kết quả tác giả công bố.
+
+---
+
 ## Quyết định: KHÔNG tiếp tục track EEG (CHB-MIT / AES)
 
 ### Chuẩn bị đã làm
