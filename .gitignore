@@ -41,6 +41,13 @@ repro/**/checkpoints/
 repro/**/results/
 repro/**/output/
 repro/**/data/
-repro/**/Dataset/
+repro/**/Dataset/*
 repro/**/cachedir*/
 repro/**/pytorch_models/
+
+# Ngoại lệ: các CSV cấu hình nhỏ tác giả đi kèm trong Dataset/ (KHÔNG phải dữ liệu
+# bệnh nhân/EEG) — cần có để code chạy được, nên vẫn theo dõi trong git.
+!repro/**/Dataset/sampling_CHBMIT.csv
+!repro/**/Dataset/segmentation.csv
+!repro/**/Dataset/seizure_summary.csv
+!repro/**/Dataset/special_interictal.csv
