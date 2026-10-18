@@ -14,7 +14,7 @@ from utils.prep_data_student import train_val_test_split_continual_s
 from models.model import CNN_LSTM_Model
 
 
-def distill_student_model(target, epochs, trials, optimizer_type, alpha, temperature):
+def distill_student_model(target, epochs, trials, optimizer_type, alpha, temperature, bidirectional=False):
     """
     Performs knowledge distillation for a given patient.
 
@@ -70,7 +70,7 @@ def distill_student_model(target, epochs, trials, optimizer_type, alpha, tempera
         print(f"\nPatient {target} | Alpha: {alpha:.2f} | Trial {trial + 1}/{trials}")
 
         # Instantiate a new student model for each trial
-        student = CNN_LSTM_Model(X_train.shape).to(DEVICE)
+        student = CNN_LSTM_Model(X_train.shape, bidirectional=bidirectional).to(DEVICE)
 
         ce_loss = nn.CrossEntropyLoss()
         if optimizer_type == "Adam":
@@ -185,6 +185,10 @@ if __name__ == "__main__":
         default=4,
         help="Temperature for distillation (default: 4)",
     )
+    parser.add_argument(
+        "--bidirectional", action="store_true",
+        help="Use a Bidirectional LSTM inside CNN_LSTM_Model (self-proposed improvement, default off)",
+    )
 
     args = parser.parse_args()
 
@@ -203,6 +207,7 @@ if __name__ == "__main__":
             args.optimizer,
             args.alpha,
             args.temperature,
+            bidirectional=args.bidirectional,
         )
 
     # Save all results to file

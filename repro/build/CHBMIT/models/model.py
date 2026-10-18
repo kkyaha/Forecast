@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class CNN_LSTM_Model(nn.Module):
-    def __init__(self, X_train_shape):
+    def __init__(self, X_train_shape, bidirectional=False):
         super(CNN_LSTM_Model, self).__init__()
 
         self.bn1 = nn.BatchNorm3d(num_features=X_train_shape[1])
@@ -22,9 +22,10 @@ class CNN_LSTM_Model(nn.Module):
 
         self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(0.5)
-        self.lstm = nn.LSTM(input_size=32 * 60, hidden_size=512, num_layers=3, batch_first=True)
+        self.lstm = nn.LSTM(input_size=32 * 60, hidden_size=512, num_layers=3, batch_first=True,
+                             bidirectional=bidirectional)
 
-        self.fc1 = nn.Linear(512, 256)
+        self.fc1 = nn.Linear(512 * (2 if bidirectional else 1), 256)
         self.fc2 = nn.Linear(256, 2)
 
     def forward(self, x, verbose=False):

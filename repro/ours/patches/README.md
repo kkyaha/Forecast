@@ -39,3 +39,32 @@ git apply repro/ours/patches/arch_lstm_gru.patch
 
 **Notebook chạy thử trên Kaggle**: bản độc lập (không cần clone repo, tự sinh dữ liệu
 Mackey-Glass) nằm tại `repro/notebook/FGL_MackeyGlass_Arch_Kaggle.ipynb`.
+
+## `chbmit_bidirectional_lstm.patch`
+
+**Cải tiến**: thêm lựa chọn LSTM 2 chiều (Bidirectional) cho `CNN_LSTM_Model` dùng ở cả
+Teacher (Stage 1 — seizure detection) và Student/FGL (Stage 3 — seizure prediction) trên
+CHB-MIT, thay vì chỉ LSTM 1 chiều như code gốc. Cùng tinh thần với `arch_lstm_gru.patch`
+trên Mackey-Glass: LSTM 2 chiều cho mỗi bước thời gian "thấy" được cả ngữ cảnh trước lẫn sau
+trong cùng cửa sổ 30 giây, thường cải thiện phân loại chuỗi EEG.
+
+**Thay đổi**:
+- `repro/build/CHBMIT/models/model.py`: tham số hoá `CNN_LSTM_Model` bằng `bidirectional:
+  bool` (mặc định `False` — hành vi cũ giữ nguyên 100%; đã kiểm chứng cơ chế LSTM+fc1 với
+  input giả lập cho cả 2 chế độ, ra đúng shape logits `(batch, 2)`).
+- `repro/build/CHBMIT/exp/seizure_detection.py`, `exp/FGL_CHBMIT.py`: thêm cờ
+  `--bidirectional`.
+
+**Kết quả**: chưa có số liệu tái hiện trên CHB-MIT patient 1 trên máy local (Stage 2-3 từng
+crash do OOM — xem `EXPERIMENT_LOG.md`). Dự định chạy thử trên Kaggle (dữ liệu đã upload
+sẵn), xem notebook bên dưới.
+
+**Áp patch** (lên `repro/build/CHBMIT/` sạch, ví dụ sau khi vá lại theo `EXPERIMENT_LOG.md`):
+```
+git apply repro/ours/patches/chbmit_bidirectional_lstm.patch   # chạy từ root repo
+```
+
+**Notebook chạy trên Kaggle**: `repro/notebook/FGL_CHBMIT_Kaggle.ipynb` — clone thẳng từ
+`https://github.com/kkyaha/Forecast.git` (đã có sẵn patch này trong code, không cần vá lúc
+chạy), nạp dữ liệu CHB-MIT từ Kaggle Dataset có sẵn, chạy Stage 1 + Stage 3 với
+`--bidirectional`.

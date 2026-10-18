@@ -17,7 +17,7 @@ from utils.prep_data_teacher import train_val_test_split_continual_t
 from models.model import CNN_LSTM_Model
 
 
-def train_teacher_model(target, epochs, optimizer_type, patience):
+def train_teacher_model(target, epochs, optimizer_type, patience, bidirectional=False):
     """
     Trains and evaluates a seizure detection model for a given patient.
 
@@ -56,7 +56,7 @@ def train_teacher_model(target, epochs, optimizer_type, patience):
     )
 
     # Initialize the teacher model
-    teacher = CNN_LSTM_Model(X_train.shape).to(DEVICE)
+    teacher = CNN_LSTM_Model(X_train.shape, bidirectional=bidirectional).to(DEVICE)
 
     # Convert training data to PyTorch tensors and move to GPU
     Y_train = torch.tensor(y_train).long().to(DEVICE)
@@ -175,6 +175,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--patience", type=int, default=5, help="Early stopping patience (default: 5)"
     )
+    parser.add_argument(
+        "--bidirectional", action="store_true",
+        help="Use a Bidirectional LSTM inside CNN_LSTM_Model (self-proposed improvement, default off)",
+    )
 
     args = parser.parse_args()
 
@@ -186,7 +190,7 @@ if __name__ == "__main__":
     results = {}
 
     for patient in patient_list:
-        auc = train_teacher_model(patient, args.epochs, args.optimizer, args.patience)
+        auc = train_teacher_model(patient, args.epochs, args.optimizer, args.patience, bidirectional=args.bidirectional)
         results[patient] = auc
 
     # Save results to file

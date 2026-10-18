@@ -1,0 +1,109 @@
+diff --git a/repro/build/CHBMIT/exp/FGL_CHBMIT.py b/repro/build/CHBMIT/exp/FGL_CHBMIT.py
+index 7db50c6..f445df9 100644
+--- a/repro/build/CHBMIT/exp/FGL_CHBMIT.py
++++ b/repro/build/CHBMIT/exp/FGL_CHBMIT.py
+@@ -14,7 +14,7 @@ from utils.prep_data_student import train_val_test_split_continual_s
+ from models.model import CNN_LSTM_Model
+ 
+ 
+-def distill_student_model(target, epochs, trials, optimizer_type, alpha, temperature):
++def distill_student_model(target, epochs, trials, optimizer_type, alpha, temperature, bidirectional=False):
+     """
+     Performs knowledge distillation for a given patient.
+ 
+@@ -70,7 +70,7 @@ def distill_student_model(target, epochs, trials, optimizer_type, alpha, tempera
+         print(f"\nPatient {target} | Alpha: {alpha:.2f} | Trial {trial + 1}/{trials}")
+ 
+         # Instantiate a new student model for each trial
+-        student = CNN_LSTM_Model(X_train.shape).to(DEVICE)
++        student = CNN_LSTM_Model(X_train.shape, bidirectional=bidirectional).to(DEVICE)
+ 
+         ce_loss = nn.CrossEntropyLoss()
+         if optimizer_type == "Adam":
+@@ -185,6 +185,10 @@ if __name__ == "__main__":
+         default=4,
+         help="Temperature for distillation (default: 4)",
+     )
++    parser.add_argument(
++        "--bidirectional", action="store_true",
++        help="Use a Bidirectional LSTM inside CNN_LSTM_Model (self-proposed improvement, default off)",
++    )
+ 
+     args = parser.parse_args()
+ 
+@@ -203,6 +207,7 @@ if __name__ == "__main__":
+             args.optimizer,
+             args.alpha,
+             args.temperature,
++            bidirectional=args.bidirectional,
+         )
+ 
+     # Save all results to file
+diff --git a/repro/build/CHBMIT/exp/seizure_detection.py b/repro/build/CHBMIT/exp/seizure_detection.py
+index ac5c6d3..f377abc 100644
+--- a/repro/build/CHBMIT/exp/seizure_detection.py
++++ b/repro/build/CHBMIT/exp/seizure_detection.py
+@@ -17,7 +17,7 @@ from utils.prep_data_teacher import train_val_test_split_continual_t
+ from models.model import CNN_LSTM_Model
+ 
+ 
+-def train_teacher_model(target, epochs, optimizer_type, patience):
++def train_teacher_model(target, epochs, optimizer_type, patience, bidirectional=False):
+     """
+     Trains and evaluates a seizure detection model for a given patient.
+ 
+@@ -56,7 +56,7 @@ def train_teacher_model(target, epochs, optimizer_type, patience):
+     )
+ 
+     # Initialize the teacher model
+-    teacher = CNN_LSTM_Model(X_train.shape).to(DEVICE)
++    teacher = CNN_LSTM_Model(X_train.shape, bidirectional=bidirectional).to(DEVICE)
+ 
+     # Convert training data to PyTorch tensors and move to GPU
+     Y_train = torch.tensor(y_train).long().to(DEVICE)
+@@ -175,6 +175,10 @@ if __name__ == "__main__":
+     parser.add_argument(
+         "--patience", type=int, default=5, help="Early stopping patience (default: 5)"
+     )
++    parser.add_argument(
++        "--bidirectional", action="store_true",
++        help="Use a Bidirectional LSTM inside CNN_LSTM_Model (self-proposed improvement, default off)",
++    )
+ 
+     args = parser.parse_args()
+ 
+@@ -186,7 +190,7 @@ if __name__ == "__main__":
+     results = {}
+ 
+     for patient in patient_list:
+-        auc = train_teacher_model(patient, args.epochs, args.optimizer, args.patience)
++        auc = train_teacher_model(patient, args.epochs, args.optimizer, args.patience, bidirectional=args.bidirectional)
+         results[patient] = auc
+ 
+     # Save results to file
+diff --git a/repro/build/CHBMIT/models/model.py b/repro/build/CHBMIT/models/model.py
+index 119dae1..e165d8a 100644
+--- a/repro/build/CHBMIT/models/model.py
++++ b/repro/build/CHBMIT/models/model.py
+@@ -4,7 +4,7 @@ import torch.nn.functional as F
+ 
+ 
+ class CNN_LSTM_Model(nn.Module):
+-    def __init__(self, X_train_shape):
++    def __init__(self, X_train_shape, bidirectional=False):
+         super(CNN_LSTM_Model, self).__init__()
+ 
+         self.bn1 = nn.BatchNorm3d(num_features=X_train_shape[1])
+@@ -22,9 +22,10 @@ class CNN_LSTM_Model(nn.Module):
+ 
+         self.flatten = nn.Flatten()
+         self.dropout = nn.Dropout(0.5)
+-        self.lstm = nn.LSTM(input_size=32 * 60, hidden_size=512, num_layers=3, batch_first=True)
++        self.lstm = nn.LSTM(input_size=32 * 60, hidden_size=512, num_layers=3, batch_first=True,
++                             bidirectional=bidirectional)
+ 
+-        self.fc1 = nn.Linear(512, 256)
++        self.fc1 = nn.Linear(512 * (2 if bidirectional else 1), 256)
+         self.fc2 = nn.Linear(256, 2)
+ 
+     def forward(self, x, verbose=False):
