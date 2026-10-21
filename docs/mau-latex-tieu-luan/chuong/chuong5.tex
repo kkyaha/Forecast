@@ -1,0 +1,235 @@
+% CHƯƠNG 5 - Rubric: Phân tích, hiểu code thực nghiệm (2,5 điểm)
+\chapter{Tái hiện thực nghiệm}
+\label{chuong:taihien}
+
+\section{Cấu trúc mã nguồn của tác giả}
+
+\subsection{Mackey--Glass}
+
+Mã nguồn cho thực nghiệm Mackey--Glass gồm bốn tệp chính. Tệp \texttt{utils/generate.py} sinh
+(hoặc đọc từ \texttt{data.pkl} có sẵn) chuỗi Mackey--Glass thô. Tệp \texttt{utils/utils.py}
+định nghĩa lớp \texttt{MackeyGlass} (sinh dữ liệu), hàm \texttt{create\_time\_series\_dataset}
+(cắt chuỗi thành cặp đầu vào/nhãn theo lookback window, tầm dự báo và offset như
+Bảng~\ref{bang:mg-offset}), lớp mô hình \texttt{RNN}, và hàm \texttt{KL} tính hàm mất mát chưng
+cất. Tệp \texttt{exp/base\_exp.py} là điểm vào chính, thực hiện tuần tự ba giai đoạn huấn
+luyện (Hình~\ref{hinh:quytrinh-fgl}) và in ra MSE trên tập kiểm tra của cả ba mô hình. Tệp
+\texttt{exp/drift\_exp.py} là một thực nghiệm mở rộng của chính tác giả, kết hợp FGL với phát
+hiện trôi khái niệm bằng kiểm định Page--Hinkley trong lúc suy luận.
+
+\subsection{CHB-MIT}
+
+Mã nguồn CHB-MIT phức tạp hơn, gồm các nhóm tệp: \texttt{utils/load\_signals\_\{teacher,
+student\}.py} đọc tệp \texttt{.edf} bằng thư viện \texttt{mne} và cắt cửa sổ 30 giây;
+\texttt{utils/prep\_data\_\{teacher,student\}.py} áp dụng biến đổi STFT, oversampling lớp
+ictal, rồi lưu cache kết quả bằng \texttt{hickle} vào \texttt{cachedir-teacher/} hoặc
+\texttt{cachedir-student/}; \texttt{models/model.py} định nghĩa hai kiến trúc
+\texttt{CNN\_LSTM\_Model} và \texttt{MViT}; \texttt{exp/seizure\_detection.py},
+\texttt{exp/seizure\_prediction.py} và \texttt{exp/FGL\_CHBMIT.py} là ba điểm vào tương ứng
+với ba giai đoạn huấn luyện, lưu checkpoint vào \texttt{pytorch\_models/}.
+
+\section{Kết quả tái hiện trên Mackey--Glass}
+
+\subsection{Lần chạy chuẩn}
+
+Với tham số mẫu (\texttt{horizon=5, num\_bins=50, alpha=0.5, epochs=20}, seed mặc định 42),
+dùng trực tiếp \texttt{data.pkl} tác giả cung cấp, kết quả thu được trình bày trong
+Bảng~\ref{bang:mg-chuan}.
+
+\begin{table}[H]{Kết quả tái hiện lần chạy chuẩn trên Mackey--Glass (seed 42)}
+	\label{bang:mg-chuan}
+	\centering
+	\begin{tabular}{lc}
+		\toprule
+		\textbf{Mô hình} & \textbf{MSE trên tập kiểm tra} \\
+		\midrule
+		Teacher (dự báo 1 bước) & 5,4391 \\
+		Baseline (dự báo 5 bước, không FGL) & 139,3832 \\
+		Student (dự báo 5 bước, có FGL) & 104,3942 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Mức giảm MSE từ Baseline sang Student là $(139,3832 - 104,3942)/139,3832 \approx 25,1\%$, khớp
+khá sát với mức \textbf{23,4\%} tác giả công bố (có loại outlier), ngay từ lần chạy đầu tiên
+với đúng tham số mẫu, chưa chỉnh gì thêm.
+
+\subsection{Sweep sáu seed để kiểm tra độ ổn định}
+\label{sec:mg-sweep-seed}
+
+Vì tác giả hardcode seed cố định (42) và không cung cấp cách đổi seed qua dòng lệnh, báo cáo
+đã bổ sung tham số \texttt{--seed} để chạy lại trên sáu seed khác nhau, kết quả trong
+Bảng~\ref{bang:mg-sweep}.
+
+\begin{table}[H]{Kết quả sweep sáu seed trên Mackey--Glass}
+	\label{bang:mg-sweep}
+	\centering
+	\begin{tabular}{cccc c}
+		\toprule
+		\textbf{Seed} & \textbf{Teacher MSE} & \textbf{Baseline MSE} & \textbf{Student MSE} & \textbf{Giảm MSE} \\
+		\midrule
+		0  & 4,8331 & 156,1701 & 102,7514 & 34,20\% \\
+		1  & 5,4642 & 136,5673 & 106,0795 & 22,32\% \\
+		2  & 5,7293 & 143,5308 & 104,4262 & 27,25\% \\
+		3  & 6,2236 & 140,3592 & 107,6203 & 23,32\% \\
+		4  & 7,4506 & 147,5238 & 108,6868 & 26,33\% \\
+		42 & 5,4391 & 139,3832 & 104,3942 & 25,10\% \\
+		\midrule
+		\textbf{Trung bình} & 5,857 & 143,922 & 105,660 & \textbf{26,42\% (độ lệch chuẩn 3,86)} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Toàn bộ sáu seed đều cho Student MSE thấp hơn Baseline MSE --- FGL cải thiện nhất quán, không
+có seed nào đảo chiều. Mức cải thiện trung bình 26,42\% \textbf{cao hơn một chút} so với
+23,4\% công bố, có thể do khác biệt nhỏ về cách loại outlier mà tác giả áp dụng mà thực nghiệm
+này chưa làm, hoặc do bài báo lấy trung bình trên nhiều cấu hình thực nghiệm hơn. Dù vậy, kết
+quả tái hiện khớp \textbf{đúng hướng và đúng độ lớn} với số liệu công bố.
+
+\subsection{Thực nghiệm mở rộng của tác giả: quét tầm dự báo với Page--Hinkley}
+
+Kịch bản \texttt{drift\_exp.py} (của tác giả, không phải tự đề xuất) quét tầm dự báo từ 2 đến
+15 bước, với $\alpha = 0,0$ (student học hoàn toàn từ teacher, không dùng nhãn thật). Kết quả
+trình bày trong Bảng~\ref{bang:mg-drift}.
+
+\begin{table}[H]{Kết quả quét tầm dự báo 2--15 với Page--Hinkley trên Mackey--Glass}
+	\label{bang:mg-drift}
+	\centering
+	\small
+	\begin{tabular}{ccccc}
+		\toprule
+		\textbf{Horizon} & \textbf{Teacher MSE} & \textbf{Baseline MSE} & \textbf{Student MSE} & \textbf{Giảm MSE} \\
+		\midrule
+		2  & 0,4479 & 0,6943 & 0,7443 & $-7,20\%$ \\
+		3  & 0,4458 & 1,5198 & 1,2870 & 15,32\% \\
+		4  & 0,4542 & 2,5526 & 2,0479 & 19,77\% \\
+		5  & 0,4516 & 3,5365 & 3,0359 & 14,15\% \\
+		6  & 0,4453 & 4,3719 & 3,9307 & 10,09\% \\
+		7  & 0,4573 & 4,9760 & 4,7771 & 4,00\% \\
+		8  & 0,4562 & 5,2880 & 5,0052 & 5,35\% \\
+		9  & 0,4589 & 5,5932 & 5,1766 & 7,45\% \\
+		10 & 0,4469 & 4,9651 & 4,5422 & 8,52\% \\
+		11 & 0,4365 & 4,0057 & 3,3552 & 16,24\% \\
+		12 & 0,4380 & 3,1568 & 2,6109 & 17,29\% \\
+		13 & 0,4359 & 2,7406 & 2,3344 & 14,82\% \\
+		14 & 0,4401 & 2,3135 & 2,0281 & 12,34\% \\
+		15 & 0,4469 & 2,1323 & 1,8453 & 13,46\% \\
+		\midrule
+		\textbf{TB (14 horizon)} & 0,446 & --- & --- & \textbf{10,83\%} \\
+		\textbf{TB (bỏ horizon=2)} & --- & --- & --- & \textbf{12,22\%} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+13/14 giá trị horizon cho FGL cải thiện; chỉ \textbf{horizon=2 là ngoại lệ âm} ($-7,20\%$), tức
+ở tầm dự báo rất ngắn, FGL kết hợp Page--Hinkley \textbf{làm tệ hơn} so với không dùng FGL.
+Teacher MSE gần như hằng số ($\approx 0,44$--$0,46$) ở mọi horizon, hợp lý vì teacher luôn giải
+bài toán 1 bước cố định. Baseline MSE không tăng đơn điệu theo horizon (tăng từ h=2 đến h=9,
+rồi giảm từ h=10 đến h=15) --- quan sát thú vị, có thể liên quan tới chu kỳ trễ đặc trưng
+$\tau=17$ của hệ Mackey--Glass, không phải lỗi mã nguồn.
+
+\section{Kết quả tái hiện trên CHB-MIT}
+\label{sec:chbmit-ketqua}
+
+Trên máy cá nhân, Giai đoạn 1 (Teacher, bệnh nhân 1) cho AUC-ROC $=0,28$ --- thấp hơn một bộ
+phân loại ngẫu nhiên (0,5), một kết quả bất thường; Giai đoạn 2 và 3 không hoàn thành do hết bộ
+nhớ khi xây dựng cache đặc trưng STFT. Thực nghiệm sau đó được chạy lại đầy đủ cả ba giai đoạn
+trên GPU Kaggle, từ bản sạch của repo gốc tác giả, cho ba bệnh nhân (1, 3, 5).
+
+\begin{table}[H]{AUC-ROC của Teacher (Giai đoạn 1) theo bệnh nhân, chạy trên Kaggle}
+	\label{bang:chbmit-detection}
+	\centering
+	\begin{tabular}{cc}
+		\toprule
+		\textbf{Bệnh nhân} & \textbf{AUC-ROC} \\
+		\midrule
+		1 (trung bình 3 lần chạy) & 0,6451 \\
+		3 & 0,9067 \\
+		5 & 0,9911 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Tất cả đều cao hơn rõ rệt mức ngẫu nhiên --- khác hẳn kết quả bất thường (0,28) trên máy cá
+nhân, cho thấy đó nhiều khả năng là một lần khởi tạo ngẫu nhiên không may
+(\texttt{seizure\_detection.py} không cố định seed) hơn là lỗi hệ thống; nghi vấn \texttt{shuffle=False}
+(mục~\ref{item:shuffle-false}) chưa bị bác bỏ hoàn toàn nhưng không còn đủ cơ sở khẳng định là
+nguyên nhân chính.
+
+\begin{table}[H]{AUC-ROC trung bình Baseline (Giai đoạn 2) và Student/FGL (Giai đoạn 3) theo bệnh nhân}
+	\label{bang:chbmit-sosanh-benhnhan}
+	\centering
+	\begin{tabular}{cccc}
+		\toprule
+		\textbf{Bệnh nhân} & \textbf{Baseline} & \textbf{Student (FGL)} & \textbf{Mức tăng} \\
+		\midrule
+		1 & 0,9173 & 0,9068 & $-1,1\%$ \\
+		3 & 0,4276 & 0,7253 & $+69,6\%$ \\
+		5 & 0,1963 & 0,3901 & $+98,7\%$ \\
+		\midrule
+		\textbf{Trung bình 3 bệnh nhân} & \textbf{0,5137} & \textbf{0,6741} & \textbf{+31,2\%} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Mỗi bệnh nhân chạy ba trial (bệnh nhân 1 chạy ba lần độc lập, tức chín trial); cả
+\texttt{seizure\_prediction.py} và \texttt{FGL\_CHBMIT.py} không cố định seed ngẫu nhiên, nên
+kết quả giữa các trial dao động khá mạnh (ví dụ bệnh nhân 1 có một trial Student sụp xuống
+0,4376, kéo trung bình xuống gần mức Baseline).
+
+Mức tăng trung bình trên ba bệnh nhân là \textbf{+31,2\%}, thấp hơn mức 44,8\% bài báo công
+bố. Khác biệt lớn giữa các bệnh nhân có một nguyên nhân khá rõ: Baseline hoạt động rất khác
+nhau (AUC từ 0,20 đến 0,92) --- ở bệnh nhân 1, Baseline đã gần như hoàn hảo nên FGL không còn
+nhiều để cải thiện; ở bệnh nhân 3 và 5, Baseline yếu nên FGL cải thiện tương đối nhiều hơn, dù
+giá trị tuyệt đối vẫn chưa cao (Student bệnh nhân 5 chỉ đạt 0,39). Với mới ba bệnh nhân và một
+vài trial mỗi bệnh nhân, đây nên được xem là bằng chứng ban đầu, chưa đủ để khẳng định chắc
+chắn mức khớp với con số của bài báo.
+
+\section{Các vấn đề phát hiện khi chạy mã nguồn}
+
+Quá trình tái hiện phát hiện tám vấn đề cụ thể trong mã nguồn công khai của tác giả, cho thấy
+mã nguồn ở trạng thái công bố \textbf{không chạy được ngay} mà cần chỉnh sửa:
+
+\begin{enumerate}
+	\item \textbf{Bốn tệp còn nguyên dấu xung đột merge chưa giải quyết} tại commit mới nhất
+	của kho tác giả (\texttt{base\_exp.py}, \texttt{drift\_exp.py}, \texttt{utils/utils.py},
+	\texttt{utils/generate.py}) --- gây lỗi cú pháp (SyntaxError) ngay khi import, mã nguồn
+	\textbf{không chạy được một dòng nào} ở trạng thái công bố.
+	\item \textbf{Lỗi lệch tầm dự báo trong \texttt{generate.py}}: hai nhánh xung đột tính dữ
+	liệu khác nhau; một nhánh làm lệch \texttt{forecasting\_horizon} đi 1 bước so với giá trị
+	người dùng truyền qua \texttt{--horizon}. Xác minh bằng cách đối chiếu với \texttt{data.pkl}
+	tác giả tự commit sẵn cho thấy nhánh đúng là nhánh không làm lệch.
+	\item \textbf{Toàn bộ tham số dòng lệnh của \texttt{drift\_exp.py} bị vô hiệu}: khối
+	\texttt{argparse} nằm trong một chuỗi văn bản bị chú thích (comment), nên các cờ như
+	\texttt{--horizon}, \texttt{--use\_ph} không có tác dụng gì; mã nguồn \textit{thực sự} chạy
+	là một đoạn hardcode quét horizon 2--15 nằm ngoài vùng chú thích.
+	\item \textbf{Thiếu khai báo dependency}: \texttt{utils.py} import thư viện
+	\texttt{jitcdde} ở cấp module nhưng thư viện này không có trong \texttt{requirements.txt}.
+	\item \textbf{Đường dẫn chạy thực tế khác tài liệu hướng dẫn}: tài liệu ghi
+	\texttt{python base\_exp.py}, nhưng tệp nằm ở \texttt{exp/base\_exp.py} và chỉ chạy được
+	đúng khi gọi với \texttt{PYTHONPATH=.} từ thư mục gốc của bài toán tương ứng.
+	\item \textbf{Hardcode \texttt{.to("cuda")}} ở ba script CHB-MIT --- không chạy được trên
+	máy không có GPU NVIDIA; đã vá thành tự nhận biết MPS/CUDA/CPU.
+	\item \textbf{Nghi vấn \texttt{shuffle=False} trên dữ liệu đã sắp theo thứ tự lớp}
+	\label{item:shuffle-false}: dữ liệu
+	huấn luyện của teacher CHB-MIT được nối theo thứ tự [toàn bộ interictal, rồi toàn bộ ictal]
+	nhưng \texttt{DataLoader} không xáo trộn (shuffle), khiến mỗi epoch model thấy hàng loạt
+	batch toàn nhãn 0 trước, rồi mới tới batch toàn nhãn 1 --- rất có thể là nguyên nhân của chỉ
+	số AUC bất thường (0,28) ở mục trên, tuy \textbf{chưa chạy lại để xác nhận} giả thuyết này.
+	\item \textbf{Thiết kế cache gom toàn bộ dữ liệu một loại nhãn vào bộ nhớ} trước khi ghi ra
+	đĩa, không scale với máy có RAM nhỏ khi xử lý nhiều giờ dữ liệu EEG liên tục --- nguyên nhân
+	của việc hết bộ nhớ khi xây dựng cache cho Giai đoạn 2/3 trên CHB-MIT.
+\end{enumerate}
+
+\section{Nhận xét về khả năng tái hiện}
+
+Nhìn chung, thực nghiệm Mackey--Glass cho thấy FGL là một phương pháp \textbf{tái hiện được}
+cả về hướng và độ lớn cải thiện, với điều kiện phải sửa các lỗi mã nguồn ở mục trên trước; kết
+quả ổn định trên nhiều seed, không phụ thuộc vào một lần chạy may rủi. Trên CHB-MIT, FGL cải
+thiện trung bình $+31,2\%$ trên ba bệnh nhân (Bảng~\ref{bang:chbmit-sosanh-benhnhan}) --- thấp
+hơn mức 44,8\% bài báo công bố, nhưng không đồng đều: gần như không cải thiện ở bệnh nhân có
+Baseline đã mạnh (bệnh nhân 1), còn cải thiện mạnh ở hai bệnh nhân có Baseline yếu (3, 5). Với
+chỉ ba bệnh nhân và vài trial mỗi bệnh nhân, nên xem đây là bằng chứng ban đầu, chưa đủ để
+khẳng định chắc chắn mức khớp với bài báo. Điểm tích cực là chỉ số AUC bất thường (0,28) của
+Teacher trên máy cá nhân không lặp lại trên Kaggle. Việc không tái hiện được AES hoàn toàn là
+do giới hạn thời gian và việc tải dữ liệu, không phản ánh đánh giá về bản thân phương pháp
+trên bộ dữ liệu này.

@@ -55,16 +55,56 @@ trong cùng cửa sổ 30 giây, thường cải thiện phân loại chuỗi EE
 - `repro/build/CHBMIT/exp/seizure_detection.py`, `exp/FGL_CHBMIT.py`: thêm cờ
   `--bidirectional`.
 
-**Kết quả**: chưa có số liệu tái hiện trên CHB-MIT patient 1 trên máy local (Stage 2-3 từng
-crash do OOM — xem `EXPERIMENT_LOG.md`). Dự định chạy thử trên Kaggle (dữ liệu đã upload
-sẵn), xem notebook bên dưới.
+**Kết quả**: chưa có số liệu BiLSTM thật. Các lần chạy trên Kaggle tưởng là bản BiLSTM (bệnh
+nhân 1, 3, 5) hoá ra là chạy trực tiếp từ clone sạch repo gốc tác giả (không qua kho
+`kkyaha/Forecast`, không dùng cờ `--bidirectional`) — số liệu đó là **bản gốc**, đã chuyển sang
+dùng cho báo cáo giữa kỳ (phần tái hiện), xem `EXPERIMENT_LOG.md` mục "Lần chạy 6" (bệnh nhân
+1) và "Lần chạy 7" (bệnh nhân 3, 5). Dự định chạy lại đúng bản BiLSTM (qua `kkyaha/Forecast`,
+có cờ `--bidirectional`) cho báo cáo cuối kỳ.
 
 **Áp patch** (lên `repro/build/CHBMIT/` sạch, ví dụ sau khi vá lại theo `EXPERIMENT_LOG.md`):
 ```
 git apply repro/ours/patches/chbmit_bidirectional_lstm.patch   # chạy từ root repo
 ```
 
-**Notebook chạy trên Kaggle**: `repro/notebook/FGL_CHBMIT_Kaggle.ipynb` — clone thẳng từ
-`https://github.com/kkyaha/Forecast.git` (đã có sẵn patch này trong code, không cần vá lúc
-chạy), nạp dữ liệu CHB-MIT từ Kaggle Dataset có sẵn, chạy Stage 1 + Stage 3 với
-`--bidirectional`.
+**Notebook chạy trên Kaggle**: `repro/notebook/FGL_CHBMIT_Kaggle.ipynb` — Stage 1 và Stage 3
+mặc định chạy bản gốc (không `--bidirectional`), dùng cho báo cáo giữa kỳ. Biến thể BiLSTM nằm
+ở cell riêng ngay dưới mỗi Stage (lệnh bị comment `#`, bỏ dấu `#` để chạy cho báo cáo cuối kỳ).
+
+## `mg_timeseries_cv.patch`
+
+**Cải tiến**: thêm kịch bản time-series cross-validation (rolling-origin / expanding-window,
+tương đương `sklearn.TimeSeriesSplit`) cho Mackey-Glass, để kiểm tra độ bền của mức cải thiện
+FGL khi đổi **vị trí chia** train/test trên chuỗi — bổ sung cho sweep 6 seed ở
+`arch_lstm_gru.patch` (chỉ đổi khởi tạo ngẫu nhiên, không đổi điểm chia dữ liệu). **Không** dùng
+k-fold chuẩn (xáo trộn ngẫu nhiên) vì sẽ làm rò dữ liệu tương lai vào lúc huấn luyện.
+
+**Thay đổi**:
+- `repro/build/mackey_glass/exp/base_exp.py`: thêm tham số tùy chọn `external_data` cho
+  `train_student_model` (mặc định `None` — hành vi cũ giữ nguyên 100%, đã xác nhận chạy lại
+  `--horizon 5 --num_bins 50 --alpha 0.5 --epochs 20` ra đúng số liệu Lần chạy 1); đổi
+  `return None` thành `return {"teacher", "baseline", "student"}` MSE (không phá vỡ gì vì
+  `__main__` cũ không dùng giá trị trả về).
+- `repro/build/mackey_glass/exp/cv_exp.py` (file mới): dùng 3 đoạn đầu chuỗi ngày càng dài
+  (70%, 85%, 100%) làm 3 fold, chạy cả RNN/LSTM/GRU trên mỗi fold.
+
+**Kết quả** (3 fold, seed 42, xem đầy đủ ở `repro/docs/EXPERIMENT_LOG.md`):
+
+| Fold (% dữ liệu) | RNN | LSTM | GRU |
+|---|---|---|---|
+| 1 (70%) | 24,39% | 32,82% | 27,31% |
+| 2 (85%) | 29,47% | 32,72% | 30,32% |
+| 3 (100%) | 25,10% | 32,65% | 30,53% |
+| **Trung bình** | 26,32% (±2,25) | **32,73% (±0,07)** | 29,38% (±1,47) |
+
+Fold 3 (100% dữ liệu) khớp *chính xác* với số liệu seed=42 đã có ở `arch_lstm_gru.patch` —
+xác nhận script chạy đúng. Cả 3 kiến trúc cải thiện dương trên cả 3 fold; LSTM có độ lệch
+chuẩn nhỏ nhất (0,07), ổn định nhất qua các vị trí chia dữ liệu khác nhau.
+
+**Áp patch**:
+```
+git apply repro/ours/patches/mg_timeseries_cv.patch   # chạy từ root repo
+```
+
+**Chạy**: từ `repro/build/mackey_glass/`,
+`PYTHONPATH=. python exp/cv_exp.py --horizon 5 --num_bins 50 --alpha 0.5 --epochs 20 --seed 42`.

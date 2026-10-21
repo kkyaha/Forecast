@@ -1,0 +1,194 @@
+% CHƯƠNG 3 - Rubric: Mô hình và Phương pháp/giải pháp/thuật toán
+\chapter{Phương pháp Future-Guided Learning}
+\label{chuong:phuongphap}
+
+Chương này trình bày chi tiết phương pháp FGL: công thức chưng cất tri thức dùng để kết nối
+teacher và student (mục~\ref{sec:fgl-loss-detail}), cách phương pháp hiện thực hóa khái niệm
+``tương lai'' khác nhau trên từng bài toán cụ thể (mục~\ref{sec:cochetuonglai} --- đây là phần
+phân tích quan trọng nhất của chương), kiến trúc các mô hình được dùng
+(mục~\ref{sec:kientruc}) và quy trình huấn luyện tổng thể (mục~\ref{sec:quytrinh}). Nội dung
+được đối chiếu trực tiếp với mã nguồn công khai của tác giả (kho
+\texttt{SkyeGunasekaran/FutureGuidedLearning}, commit \texttt{5fa24ea}) để làm rõ các chi tiết
+mà bài báo không nêu tường minh.
+
+\section{Công thức chưng cất tri thức trong FGL}
+\label{sec:fgl-loss-detail}
+
+Như đã nêu ở Chương~\ref{chuong:baitoan}, hàm mất mát của student là tổ hợp của một hàm mất
+mát chuẩn so với nhãn thật và một hàm mất mát chưng cất so với teacher:
+\begin{equation}
+	\mathcal{L}_{\text{student}} = \alpha \cdot \mathcal{L}_{\text{CE}}\!\left(y^{(S)}, f_S(\mathbf{x})\right) \;+\; (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\!\left(\operatorname{softmax}_T\!\left(f_T(\mathbf{x})\right) \,\middle\|\, \operatorname{softmax}_T\!\left(f_S(\mathbf{x})\right)\right).
+	\label{eq:fgl-loss-ch3}
+\end{equation}
+Hệ số $T^2$ nhân vào thành phần KL là một kỹ thuật chuẩn trong chưng cất tri thức
+\cite{hinton2015distillation}: khi $T$ tăng, độ lớn gradient của softmax có nhiệt độ giảm theo
+tỉ lệ $1/T^2$, nên nhân lại $T^2$ giúp giữ thang gradient ổn định khi thay đổi $T$, không phải
+một đóng góp riêng của bài báo này. Tham số $\alpha \in [0,1]$ quyết định mức độ tin vào nhãn
+thật so với tin vào teacher: $\alpha = 1$ loại bỏ hoàn toàn ảnh hưởng của teacher (tương đương
+mô hình baseline không dùng FGL); $\alpha = 0$ khiến student học hoàn toàn từ teacher, không
+dùng nhãn thật.
+
+Đối chiếu với mã nguồn, hai cài đặt của bài báo trên hai bài toán viết công thức này theo hai
+cách khác nhau: tệp \texttt{FGL\_CHBMIT.py} nhân hệ số $(1-\alpha)$ ở bên ngoài tích
+$D_{\mathrm{KL}} \cdot T^2$, còn hàm \texttt{KL()} trong \texttt{mackey\_glass/utils/utils.py}
+trả về giá trị đã nhân sẵn $(1-\alpha)$ bên trong. Hai cách viết này về toán học là
+\textit{tương đương}, chỉ khác ở chỗ đặt dấu ngoặc.
+
+\section{Cơ chế hiện thực hóa ``tương lai'' theo từng bài toán}
+\label{sec:cochetuonglai}
+
+Công thức~\eqref{eq:fgl-loss-ch3} chỉ xác định \textit{cách kết nối} teacher và student;
+phần quyết định ``tương lai'' nghĩa là gì nằm ở cách teacher và student được \textit{huấn
+luyện} với dữ liệu và nhãn khác nhau. Đây là phần linh hoạt nhất của phương pháp, được hiện
+thực hóa theo hai cách khác nhau tùy loại bài toán.
+
+\subsection{Mackey--Glass: lệch cửa sổ thời gian đầu vào}
+
+Với bài toán hồi quy trên chuỗi Mackey--Glass, không có khái niệm ``nhãn khác nhau'' giữa hai
+mô hình như bài toán phân loại; thay vào đó, FGL làm lệch \textit{cửa sổ thời gian đầu vào}.
+Cho một chuỗi $\mathbf{y} = (y_1, \dots, y_T)$, với mỗi vị trí $i$, nhãn tại mốc tuyệt đối
+$t = i + L + H - 1$ được lấy ra, trong đó $L$ là độ dài cửa sổ nhìn lại (lookback window) và
+$H$ là tầm dự báo (forecasting horizon). Teacher và student dùng cùng công thức lấy nhãn này
+nhưng với hai cặp $(L, H, \text{offset})$ khác nhau, trình bày trong
+Bảng~\ref{bang:mg-offset}.
+
+\begin{table}[H]{Cách lệch cửa sổ giữa teacher và student trên Mackey--Glass}
+	\label{bang:mg-offset}
+	\centering
+	\begin{tabular}{lccc}
+		\toprule
+		\textbf{Mô hình} & \textbf{Lookback window} & \textbf{Tầm dự báo} & \textbf{Offset đầu vào} \\
+		\midrule
+		Teacher & $L$ (giống student) & $1$ (chỉ 1 bước) & $H - 1$ \\
+		Student & $L$ & $H$ (tầm dự báo thật) & $0$ \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Vì offset của teacher bằng $H-1$, teacher xuất phát từ mốc $i + (H-1)$ và chỉ cần ngoại suy
+$1$ bước, nhưng mốc đích cuối cùng vẫn là $t = \left(i+(H-1)\right) + L + 1 - 1 = i+L+H-1$,
+\textit{trùng khớp} với mốc đích của student. Nói cách khác, teacher và student cùng nhắm tới
+một điểm đích tuyệt đối trên chuỗi, nhưng teacher xuất phát từ một điểm \textit{gần đích hơn}
+student, nên bài toán của teacher dễ hơn nhiều (chỉ ngoại suy 1 bước thay vì $H$ bước), trong
+khi vẫn có thể dùng để chưng cất tri thức về cùng một đích dự báo cho student.
+
+Vì chưng cất tri thức theo công thức~\eqref{eq:fgl-loss-ch3} yêu cầu đầu ra của teacher và
+student là phân phối xác suất rời rạc, bài toán hồi quy được chuyển thành bài toán phân loại
+bằng cách \textit{rời rạc hóa}: khoảng giá trị quan sát được của chuỗi được chia thành
+\texttt{num\_bins} lớp bằng hàm phân khoảng (tương tự \texttt{np.digitize}), biến mỗi giá trị
+liên tục thành chỉ số của lớp chứa nó. Đây là một lựa chọn thiết kế hợp lý nhưng cũng là một
+giới hạn: độ phân giải của dự báo cuối cùng bị chặn bởi số lượng lớp \texttt{num\_bins} được
+chọn.
+
+\subsection{CHB-MIT: lệch định nghĩa nhãn}
+
+Với bài toán dự báo cơn động kinh trên CHB-MIT, teacher và student không lệch cửa sổ thời
+gian mà được huấn luyện trên \textit{hai định nghĩa nhãn khác nhau} của cùng loại tín hiệu EEG,
+tương ứng với hai bài toán khác nhau, trình bày trong Bảng~\ref{bang:chbmit-nhan}.
+
+\begin{table}[H]{Hai bài toán khác nhau cho teacher và student trên CHB-MIT}
+	\label{bang:chbmit-nhan}
+	\centering
+	\small
+	\begin{tabular}{p{2.6cm}p{5.6cm}p{5.6cm}}
+		\toprule
+		 & \textbf{Teacher} & \textbf{Student} \\
+		\midrule
+		Tên bài toán & Seizure Detection (phát hiện cơn \textbf{đang} xảy ra) & Seizure Prediction (dự báo cơn \textbf{sẽ} xảy ra) \\
+		Nhãn ictal lấy từ & đoạn tín hiệu \textit{trong lúc} co giật & đoạn tín hiệu \textbf{SOP} = 30 phút, kết thúc cách thời điểm co giật \textbf{SPH} = 5 phút \\
+		Độ khó & Dễ --- thấy trực tiếp biến cố & Khó --- chỉ thấy tín hiệu trước biến cố, chưa có dấu hiệu rõ ràng \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Teacher đóng vai trò ``người đứng ở tương lai'', nhìn thấy trực tiếp tín hiệu trong lúc cơn
+động kinh xảy ra, nên bài toán của teacher dễ và đạt độ chính xác tự nhiên cao hơn. Student
+đóng vai trò ``người đứng ở quá khứ'', chỉ thấy tín hiệu \textbf{trước} cơn động kinh (giai
+đoạn tiền triệu, preictal), phải dự báo trước khi biến cố thực sự xảy ra. Khi chưng cất tri
+thức, đầu vào preictal/interictal của student được đưa qua \textit{cả} teacher và student;
+teacher chưa từng được huấn luyện trực tiếp trên dữ liệu preictal, nhưng các đặc trưng tần số
+nó học được để nhận ra cơn động kinh (từ bài toán detection) vẫn mang thông tin hữu ích để
+``cảm nhận'' tín hiệu preictal giống cơn động kinh tới mức nào, từ đó dẫn dắt student.
+
+\subsection{AES: teacher dùng chung theo loài (ngoài phạm vi tái hiện của báo cáo)}
+
+Ngoài Mackey--Glass và CHB-MIT, bài báo gốc còn thực nghiệm trên bộ dữ liệu điện não trong sọ
+(intracranial EEG) AES (American Epilepsy Society Seizure Prediction Challenge)
+\cite{brinkmann2016aes}, gồm 5 chó (\texttt{Dog\_1}--\texttt{Dog\_5}) và 2 người
+(\texttt{Patient\_1}, \texttt{Patient\_2}). Mục này chỉ trình bày cơ chế FGL trên bộ dữ liệu
+này ở mức lý thuyết, dựa trên việc đọc mã nguồn và tài liệu của tác giả, để thấy được tính tổng
+quát của phương pháp; báo cáo \textbf{không tái hiện thực nghiệm} trên bộ dữ liệu AES (lý do
+nêu ở Chương~\ref{chuong:dulieu}).
+
+AES cũng là bài toán dự báo cơn động kinh như CHB-MIT, nhưng thiếu nhãn ictal đầy đủ cho từng
+đối tượng riêng lẻ để tự huấn luyện một teacher riêng theo từng bệnh nhân/vật. Tác giả giải
+quyết bằng cách huấn luyện \textit{hai teacher dùng chung} --- một cho nhóm chó và một cho
+nhóm người --- trên dữ liệu ictal/interictal gộp chung của cả nhóm, rồi tái sử dụng cùng một
+teacher đó khi chưng cất tri thức cho mọi đối tượng cùng loài. Đây là một cách khác để hiện
+thực hóa ``tương lai'': tri thức mà teacher nắm được không đặc thù theo cá thể, mà là tri thức
+\textit{gộp chung của cả loài} về đặc trưng tần số của cơn động kinh.
+
+\section{Kiến trúc các mô hình}
+\label{sec:kientruc}
+
+\subsection{Mackey--Glass: RNN}
+
+Teacher, baseline và student trên Mackey--Glass đều dùng cùng kiến trúc: một mạng RNN 2 lớp
+(128 đơn vị ẩn) nối tiếp hai tầng kết nối đầy đủ (fully-connected), với tầng cuối có số đầu ra
+bằng \texttt{num\_bins} (số lớp sau khi rời rạc hóa). Việc dùng cùng một họ kiến trúc cho cả
+ba mô hình giữ cho khác biệt về hiệu năng chỉ phản ánh tác dụng của cơ chế FGL, không bị nhiễu
+bởi khác biệt kiến trúc.
+
+\subsection{CHB-MIT và AES: CNN-LSTM và MViT}
+
+Hai bộ dữ liệu điện não dùng chung hai lựa chọn kiến trúc, định nghĩa trong
+\texttt{models/model.py}:
+
+\begin{itemize}
+	\item \textbf{CNN\_LSTM\_Model}: ba tầng tích chập 3 chiều (Conv3D, xử lý spectrogram đa
+	kênh như một ``ảnh 3D'' thời gian--tần số--kênh) kèm các tầng gộp (pooling), sau đó làm
+	phẳng (flatten) và đưa qua một mạng LSTM 3 lớp (512 đơn vị ẩn), cuối cùng là hai tầng kết
+	nối đầy đủ cho ra 2 đầu ra (ictal/interictal). Đây là kiến trúc mặc định cho cả teacher và
+	student/baseline.
+	\item \textbf{MViT} (``multi-channel ViT''): mỗi kênh EEG được embed thành một chuỗi token
+	riêng, đưa qua một bộ mã hóa Transformer \textit{riêng cho từng kênh} (không chia sẻ trọng
+	số giữa các kênh), lấy token \texttt{[CLS]} của mỗi kênh rồi nối lại, qua một tầng kết nối
+	đầy đủ để phân loại. Ý tưởng là coi mỗi kênh EEG như một ``modal'' riêng, học đặc trưng
+	không gian--thời gian độc lập trước khi kết hợp (fuse) thông tin giữa các kênh.
+\end{itemize}
+
+
+\section{Quy trình huấn luyện tổng thể}
+\label{sec:quytrinh}
+
+Hình~\ref{hinh:quytrinh-fgl} tóm tắt quy trình ba giai đoạn (stage) mà cả hai bài toán đều
+tuân theo, chỉ khác nhau ở cách định nghĩa dữ liệu/nhãn của từng giai đoạn như đã trình bày ở
+mục~\ref{sec:cochetuonglai}.
+
+\begin{figure}[H]{Ba giai đoạn huấn luyện của Future-Guided Learning}
+	\label{hinh:quytrinh-fgl}
+	\centering
+	\begin{tikzpicture}[
+		node distance=0.5cm,
+		hop/.style={draw, rounded corners=2pt, align=center, text width=8cm, minimum height=0.95cm, font=\small},
+		tieude/.style={font=\small\bfseries},
+		mui/.style={-{Stealth[length=2mm]}, thick}
+	]
+		\node[hop] (s1) {\textbf{Giai đoạn 1 --- Teacher}\\Huấn luyện teacher trên nhiệm vụ dễ (tương lai gần hơn), độc lập, không liên quan đến student};
+		\node[hop, below=of s1] (s2) {\textbf{Giai đoạn 2 --- Baseline}\\Huấn luyện một mô hình trên nhiệm vụ khó của student, không dùng teacher (đối chứng)};
+		\node[hop, below=of s2] (s3) {\textbf{Giai đoạn 3 --- Student (FGL)}\\Huấn luyện student trên nhiệm vụ khó, có teacher (đã đóng băng) dẫn dắt qua hàm mất mát \eqref{eq:fgl-loss-ch3}};
+		\node[hop, below=of s3] (s4) {\textbf{Đánh giá}\\So sánh Baseline với Student trên cùng tập kiểm tra để đo tác dụng của FGL};
+
+		\draw[mui] (s1) -- (s2);
+		\draw[mui] (s2) -- (s3);
+		\draw[mui] (s3) -- (s4);
+		\draw[mui, dashed] (s1.east) -- ++(0.7cm,0) |- (s3.east);
+	\end{tikzpicture}
+\end{figure}
+
+Mũi tên nét đứt thể hiện việc teacher, sau khi đã huấn luyện xong ở Giai đoạn 1, được dùng lại
+(ở trạng thái đóng băng, không huấn luyện tiếp) để tính hàm mất mát chưng cất trong Giai đoạn
+3. Baseline ở Giai đoạn 2 có vai trò là mô hình đối chứng: cùng kiến trúc, cùng dữ liệu huấn
+luyện với student, nhưng không có teacher dẫn dắt ($\alpha = 1$ trong công thức
+\eqref{eq:fgl-loss-ch3}), dùng để đo \textit{riêng} tác dụng của cơ chế chưng cất tri thức,
+tách biệt khỏi tác dụng của kiến trúc hay dữ liệu.

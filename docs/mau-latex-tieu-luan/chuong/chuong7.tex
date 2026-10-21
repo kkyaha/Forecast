@@ -1,0 +1,221 @@
+% CHƯƠNG 7 - Rubric: Phân tích mở rộng; Khả năng mở rộng, liên hệ thực tế (1,5 điểm)
+\chapter{Cải tiến và mở rộng}
+\label{chuong:caitien}
+
+\section{Đề xuất cải tiến}
+
+Hai cải tiến dưới đây nằm \textbf{ngoài phạm vi bài báo gốc}, do báo cáo này tự đề xuất và
+hiện thực hóa, dựa trên quan sát rằng cả hai bộ dữ liệu đều dùng kiến trúc hồi quy đơn giản
+nhất trong họ của nó (mục~\ref{sec:rnn}).
+
+\subsection{Lý thuyết bổ sung: LSTM, GRU và LSTM hai chiều}
+\label{sec:lythuyet-caitien}
+
+Hai cải tiến của chương này cần thêm lý thuyết mà bài báo gốc không dùng, nên không đặt ở
+Chương~\ref{chuong:nentang}. Long Short-Term Memory (LSTM) \cite{hochreiter1997lstm} khắc phục
+nhược điểm tiêu biến gradient của RNN (mục~\ref{sec:rnn}) bằng cách thêm một trạng thái ô nhớ
+(cell state) $c_t$ và ba cổng điều khiển luồng thông tin: cổng quên (forget gate) $f_t$, cổng
+vào (input gate) $i_t$ và cổng ra (output gate) $o_t$:
+\begin{align}
+	f_t &= \sigma\!\left(W_f [h_{t-1}, x_t] + b_f\right), \\
+	i_t &= \sigma\!\left(W_i [h_{t-1}, x_t] + b_i\right), \\
+	o_t &= \sigma\!\left(W_o [h_{t-1}, x_t] + b_o\right), \\
+	\tilde{c}_t &= \tanh\!\left(W_c [h_{t-1}, x_t] + b_c\right), \\
+	c_t &= f_t \odot c_{t-1} + i_t \odot \tilde{c}_t, \\
+	h_t &= o_t \odot \tanh(c_t),
+	\label{eq:lstm}
+\end{align}
+trong đó $\sigma$ là hàm sigmoid, $\odot$ là tích theo từng phần tử, và $[h_{t-1}, x_t]$ là
+phép nối hai véc-tơ. Cổng quên cho phép mô hình giữ lại hoặc loại bỏ thông tin trong ô nhớ một
+cách có chọn lọc, giúp gradient lan truyền qua nhiều bước thời gian mà không bị tiêu biến.
+
+Gated Recurrent Unit (GRU) \cite{cho2014gru} là một biến thể đơn giản hơn LSTM, gộp cổng quên
+và cổng vào thành một cổng cập nhật (update gate) $z_t$, và bỏ hẳn ô nhớ riêng, chỉ dùng trạng
+thái ẩn $h_t$:
+\begin{align}
+	z_t &= \sigma\!\left(W_z [h_{t-1}, x_t] + b_z\right), \\
+	r_t &= \sigma\!\left(W_r [h_{t-1}, x_t] + b_r\right), \\
+	\tilde{h}_t &= \tanh\!\left(W_h [r_t \odot h_{t-1}, x_t] + b_h\right), \\
+	h_t &= (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t,
+	\label{eq:gru}
+\end{align}
+trong đó $r_t$ là cổng đặt lại (reset gate). Với ít tham số hơn LSTM, GRU thường huấn luyện
+nhanh hơn, nhưng do thiếu ô nhớ riêng, khả năng kiểm soát luồng thông tin dài hạn thường kém
+linh hoạt hơn LSTM.
+
+LSTM hai chiều (Bidirectional LSTM) chạy hai mạng LSTM độc lập trên cùng một chuỗi đầu vào:
+một theo chiều thuận ($t=1 \to T$) và một theo chiều ngược ($t=T \to 1$), rồi nối
+(concatenate) hai trạng thái ẩn tại mỗi bước thời gian. Nhờ đó, biểu diễn tại mỗi bước thời
+gian mang thông tin của \textit{cả ngữ cảnh trước và sau} nó trong cùng một cửa sổ dữ liệu,
+hữu ích khi toàn bộ cửa sổ đã có sẵn tại thời điểm suy luận (như một đoạn tín hiệu điện não đã
+thu xong), khác với bài toán dự báo tuần tự từng bước, nơi chỉ có thông tin quá khứ.
+
+\subsection{Đổi kiến trúc hồi quy RNN sang LSTM/GRU trên Mackey--Glass}
+
+Tác giả dùng RNN nguyên bản (\texttt{nn.RNN}, mục~\ref{sec:rnn}) cho cả Teacher, Baseline và
+Student trên Mackey--Glass --- kiến trúc đơn giản nhất trong họ mạng hồi quy, dễ gặp hiện tượng
+tiêu biến gradient hơn LSTM hoặc GRU trên chuỗi dài. Báo cáo đề xuất thay kiến trúc này bằng
+LSTM hoặc GRU, áp dụng \textit{đồng thời} cho cả ba mô hình (giữ nguyên tắc ``một họ kiến trúc
+dùng chung'' của bài báo, chỉ đổi loại cell hồi quy), nhằm kiểm tra: kiến trúc mạnh hơn có giúp
+FGL cải thiện nhiều hơn không, hay mức cải thiện tương đối giữa Baseline và Student là bất biến
+theo kiến trúc.
+
+\subsection{LSTM hai chiều cho CNN-LSTM trên CHB-MIT}
+
+Tương tự, mô hình \texttt{CNN\_LSTM\_Model} dùng cho cả Teacher và Student/Baseline trên
+CHB-MIT chỉ dùng LSTM một chiều. Vì mỗi cửa sổ tín hiệu EEG đưa vào mô hình đã được thu thập
+đầy đủ trước khi xử lý (không giống bài toán dự báo tuần tự từng bước, nơi chỉ có thông tin quá
+khứ tại thời điểm dự báo), mỗi bước thời gian trong cửa sổ \textit{hoàn toàn có thể} được biểu
+diễn bằng cả ngữ cảnh trước và sau nó, điều mà LSTM một chiều không khai thác được. Báo cáo đề
+xuất thay LSTM một chiều bằng LSTM hai chiều (mục~\ref{sec:lythuyet-caitien}) trong
+\texttt{CNN\_LSTM\_Model},
+thêm tham số \texttt{bidirectional} (mặc định tắt, không đổi hành vi gốc khi không bật), áp dụng
+cho cả Teacher và Student.
+
+\section{Kết quả thực nghiệm cải tiến}
+
+\subsection{LSTM/GRU trên Mackey--Glass: đã có kết quả đầy đủ}
+
+Bảng~\ref{bang:mg-lstm} và Bảng~\ref{bang:mg-gru} trình bày kết quả sweep sáu seed (cùng seed
+như Bảng~\ref{bang:mg-sweep}) với kiến trúc LSTM và GRU.
+
+\begin{table}[H]{Kết quả sweep sáu seed trên Mackey--Glass --- kiến trúc LSTM}
+	\label{bang:mg-lstm}
+	\centering
+	\begin{tabular}{cccc c}
+		\toprule
+		\textbf{Seed} & \textbf{Teacher MSE} & \textbf{Baseline MSE} & \textbf{Student MSE} & \textbf{Giảm MSE} \\
+		\midrule
+		0  & 4,1850 & 145,4412 & 92,5198 & 36,39\% \\
+		1  & 4,6782 & 138,9365 & 89,1096 & 35,86\% \\
+		2  & 4,6281 & 142,7424 & 94,6453 & 33,70\% \\
+		3  & 4,1689 & 139,3032 & 92,2201 & 33,80\% \\
+		4  & 4,7799 & 143,8094 & 98,7154 & 31,36\% \\
+		42 & 4,4145 & 144,6108 & 97,3967 & 32,65\% \\
+		\midrule
+		\textbf{Trung bình} & 4,476 & 142,477 & 94,101 & \textbf{33,96\% (độ lệch chuẩn 1,74)} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\begin{table}[H]{Kết quả sweep sáu seed trên Mackey--Glass --- kiến trúc GRU}
+	\label{bang:mg-gru}
+	\centering
+	\begin{tabular}{cccc c}
+		\toprule
+		\textbf{Seed} & \textbf{Teacher MSE} & \textbf{Baseline MSE} & \textbf{Student MSE} & \textbf{Giảm MSE} \\
+		\midrule
+		0  & 4,4406 & 143,1596 & 98,4052 & 31,26\% \\
+		1  & 4,5018 & 142,7224 & 98,0985 & 31,27\% \\
+		2  & 4,2662 & 140,9470 & 94,1331 & 33,21\% \\
+		3  & 4,2195 & 146,1191 & 97,3077 & 33,41\% \\
+		4  & 4,4276 & 143,0985 & 87,6893 & 38,72\% \\
+		42 & 4,7373 & 142,0975 & 98,7189 & 30,53\% \\
+		\midrule
+		\textbf{Trung bình} & 4,432 & 142,197 & 95,726 & \textbf{33,07\% (độ lệch chuẩn 2,74)} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Bảng~\ref{bang:mg-sosanh-kientruc} tổng hợp so sánh ba kiến trúc.
+
+\begin{table}[H]{So sánh mức giảm MSE trung bình giữa ba kiến trúc hồi quy (trung bình sáu seed)}
+	\label{bang:mg-sosanh-kientruc}
+	\centering
+	\begin{tabular}{lcc}
+		\toprule
+		\textbf{Kiến trúc} & \textbf{Giảm MSE trung bình} & \textbf{So với RNN} \\
+		\midrule
+		RNN (gốc tác giả) & 26,42\% (độ lệch chuẩn 3,86) & --- \\
+		LSTM & \textbf{33,96\% (độ lệch chuẩn 1,74)} & \textbf{+7,54 điểm \%} \\
+		GRU & \textbf{33,07\% (độ lệch chuẩn 2,74)} & \textbf{+6,65 điểm \%} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Cả LSTM và GRU đều cải thiện trên toàn bộ sáu seed, không có ngoại lệ. LSTM nhỉnh hơn GRU cả về
+mức cải thiện trung bình lẫn độ ổn định (độ lệch chuẩn nhỏ hơn), phù hợp với trực giác rằng cổng
+quên/nhớ riêng của LSTM kiểm soát luồng thông tin tốt hơn trên chuỗi có tính hỗn loạn cao như
+Mackey--Glass. Đáng chú ý, MSE của \textit{Teacher} cũng giảm rõ rệt khi đổi kiến trúc (RNN
+$\approx 5,86$ trung bình $\to$ LSTM $\approx 4,48 \to$ GRU $\approx 4,43$), cho thấy kiến trúc
+mạnh hơn giúp cả nhiệm vụ 1-bước của teacher, không chỉ nhiệm vụ $H$-bước của student.
+
+\subsection{Kiểm tra độ bền theo điểm cắt dữ liệu: time-series cross-validation}
+\label{sec:mg-cv}
+
+Mục~\ref{sec:mg-sweep-seed} đã chỉ ra một hạn chế: sweep sáu seed chỉ thay đổi khởi tạo trọng
+số ngẫu nhiên, còn điểm chia train/val/test trên chuỗi Mackey--Glass luôn cố định (60\%/20\%/
+20\% đầu tiên của chuỗi). Để kiểm tra riêng ảnh hưởng của \textit{vị trí chia dữ liệu}, báo cáo
+bổ sung một thực nghiệm \textit{time-series cross-validation} kiểu rolling-origin (mở rộng cửa
+sổ, tương đương \texttt{sklearn.TimeSeriesSplit}): không xáo trộn dữ liệu (tránh rò dữ liệu
+tương lai), mà dùng ba đoạn đầu chuỗi ngày càng dài (70\%, 85\%, 100\% chuỗi gốc) làm ba
+``fold''; trong mỗi fold, tỉ lệ 60/20/20 cũ vẫn được áp dụng, nên tập test của mỗi fold nằm ở
+một đoạn càng về sau trên chuỗi thời gian. Thực nghiệm chạy cả ba kiến trúc (RNN, LSTM, GRU)
+trên cùng seed 42, kết quả trong Bảng~\ref{bang:mg-cv}.
+
+\begin{table}[H]{Kết quả time-series cross-validation (rolling-origin, 3 fold) trên Mackey--Glass}
+	\label{bang:mg-cv}
+	\centering
+	\begin{tabular}{lcccc}
+		\toprule
+		\textbf{Fold (\% dữ liệu)} & \textbf{RNN} & \textbf{LSTM} & \textbf{GRU} \\
+		\midrule
+		Fold 1 (70\%) & 24,39\% & 32,82\% & 27,31\% \\
+		Fold 2 (85\%) & 29,47\% & 32,72\% & 30,32\% \\
+		Fold 3 (100\%) & 25,10\% & 32,65\% & 30,53\% \\
+		\midrule
+		\textbf{Trung bình} & 26,32\% (độ lệch chuẩn 2,25) & \textbf{32,73\% (độ lệch chuẩn 0,07)} & 29,38\% (độ lệch chuẩn 1,47) \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Fold 3 (100\% dữ liệu) dùng đúng cấu hình của ``lần chạy chuẩn'' seed 42
+(Chương~\ref{chuong:taihien}), nên kết quả ở dòng này khớp \textit{chính xác từng số lẻ} với
+Bảng~\ref{bang:mg-chuan}, \ref{bang:mg-lstm} và \ref{bang:mg-gru} (ví dụ RNN 25,10\%, LSTM
+32,65\%, GRU 30,53\%) -- một cách kiểm chứng chéo cho thấy thực nghiệm cross-validation được
+cài đặt đúng, không có lỗi âm thầm làm lệch số liệu.
+
+Kết quả quan trọng nhất: \textbf{cả ba kiến trúc đều cải thiện dương trên cả ba fold}, không
+có trường hợp nào FGL làm tệ hơn baseline khi đổi điểm chia dữ liệu -- khác với thực nghiệm
+quét horizon ở Bảng~\ref{bang:mg-drift}, nơi horizon=2 là ngoại lệ âm. Đáng chú ý hơn,
+\textbf{LSTM có độ lệch chuẩn rất nhỏ giữa các fold (0,07 điểm \%)}, nhỏ hơn nhiều so với RNN
+(2,25) và GRU (1,47) -- cho thấy mức cải thiện của LSTM không chỉ ổn định qua các seed khởi tạo
+khác nhau (mục~\ref{sec:mg-sweep-seed}) mà còn ổn định qua các vị trí chia dữ liệu khác nhau
+trên chuỗi, một bằng chứng bổ sung cho việc chọn LSTM làm cải tiến kiến trúc.
+
+\subsection{LSTM hai chiều trên CHB-MIT: đã cài đặt, chưa có kết quả số}
+
+Khác với cải tiến trên Mackey--Glass, cải tiến LSTM hai chiều cho CHB-MIT \textbf{mới hoàn
+thành phần cài đặt mã nguồn} (tham số \texttt{bidirectional}, cờ \texttt{--bidirectional}, đã
+kiểm chứng cơ chế LSTM và tầng kết nối đầy đủ phía sau hoạt động đúng với dữ liệu giả lập ở cả
+hai chế độ), nhưng \textbf{chưa có kết quả AUC-ROC thực tế} để báo cáo, vì quá trình chạy lại
+Giai đoạn 1 và Giai đoạn 3 trên Kaggle (Chương~\ref{chuong:taihien}) còn đang được hoàn thiện
+tại thời điểm viết báo cáo này. Đây được nêu rõ là một phần \textbf{đang thực hiện}, không phải
+kết quả đã có nhưng bị bỏ sót.
+
+\section{Liên hệ thực tế}
+
+Đánh đổi giữa tính hữu dụng và độ chính xác của dự báo sớm/muộn (Chương~\ref{chuong:baitoan})
+không chỉ xuất hiện trong dự báo cơn động kinh, mà còn phổ biến ở nhiều lĩnh vực khác có dữ
+liệu dạng chuỗi thời gian với khả năng thay đổi cấu trúc hoặc có biến cố cần cảnh báo sớm:
+
+\begin{itemize}
+	\item \textbf{Bảo trì dự đoán (predictive maintenance)} trong công nghiệp: tín hiệu cảm
+	biến của máy móc thường có dấu hiệu bất thường nhẹ rất lâu trước khi hỏng hóc thực sự xảy
+	ra; một mô hình kiểu FGL có thể dùng dữ liệu ngay-trước-khi-hỏng (dễ nhận biết, như teacher)
+	để dẫn dắt một mô hình dự báo sớm hơn (khó nhận biết hơn, như student).
+	\item \textbf{Dự báo tài chính có thay đổi chế độ (regime change)}: các chuỗi giá hoặc chỉ
+	số tài chính thường có các giai đoạn với động lực khác nhau (như ví dụ về gãy cấu trúc do
+	đại dịch COVID-19 trong nhiều nghiên cứu dự báo chuỗi thời gian); cơ chế teacher/student
+	lệch cửa sổ thời gian tương tự Mackey--Glass (mục~\ref{sec:cochetuonglai}) có thể áp dụng
+	trực tiếp cho bài toán này.
+	\item \textbf{Cảnh báo sớm trong y tế} cho các biến cố khác ngoài động kinh, như nhiễm
+	khuẩn huyết (sepsis) hay rối loạn nhịp tim, nơi cùng tồn tại đánh đổi giữa phát hiện sớm
+	(hữu dụng, khó) và phát hiện muộn (dễ, ít giá trị can thiệp) --- cấu trúc bài toán giống
+	hoàn toàn với dự báo cơn động kinh trên CHB-MIT.
+\end{itemize}
+
+Hai cải tiến đề xuất trong chương này --- đổi kiến trúc hồi quy mạnh hơn, và khai thác ngữ
+cảnh hai chiều khi dữ liệu đầu vào đã có sẵn đầy đủ --- đều là các thay đổi kiến trúc đơn giản,
+không đụng đến logic chưng cất tri thức cốt lõi của FGL, nên có thể kỳ vọng mang lại lợi ích
+tương tự khi áp dụng FGL cho các lĩnh vực khác kể trên.

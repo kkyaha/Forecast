@@ -1,0 +1,76 @@
+% =====================================================================
+% KHUNG BÁO CÁO TIỂU LUẬN
+% Dùng lớp tài liệu uetgraduation của Lê Duy Quang
+% (github.com/leduyquang753/uet-graduation-latex, giấy phép MIT).
+% Biên dịch bằng LuaLaTeX (Overleaf: Menu -> Compiler -> LuaLaTeX).
+% =====================================================================
+\documentclass{uetgraduation}
+
+\usepackage{booktabs}  % đường kẻ bảng đẹp: \toprule, \midrule, \bottomrule
+\graphicspath{{hinh/}} % ảnh đặt trong thư mục hinh/
+\usetikzlibrary{positioning,arrows.meta} % dùng cho sơ đồ quy trình
+
+% Phông chữ chính được đặt trong uetgraduation.cls (Latin Modern Roman).
+% Ba dòng dưới khắc phục lỗi của lớp tài liệu gốc: tên hàm (max, min, argmin, Var)
+% và chữ đậm, chữ đứng trong công thức không hiện. Nếu đổi phông trong file .cls
+% thì đổi cả tên phông ở ba dòng này cho khớp.
+\mathfont[operator]{Latin Modern Roman}
+\newmathbold{\mathbf}{Latin Modern Roman}
+\newmathrm{\mathrm}{Latin Modern Roman}
+
+% Đánh số công thức theo chương: (1.1), (1.2), (2.1)...
+\numberwithin{equation}{chapter}
+
+% Lệnh đánh dấu chỗ cần tự viết: hiện chữ xám nghiêng trong PDF.
+% Viết xong thì xóa cả lệnh. Tìm "\gichu" để biết còn chỗ nào chưa viết.
+\newcommand{\gichu}[1]{{\color{gray}\itshape [#1]}}
+
+% Chương không đánh số (Mở đầu, Kết luận). Lớp tài liệu gốc không có lệnh này.
+% Số trang Ả Rập bắt đầu từ chương đầu tiên, tức từ Mở đầu (đúng quy định mục 2).
+\makeatletter
+\newcommand\chuongkhongso[1]{%
+	\clearpage
+	\if@firstchapter
+		\setcounter{firstContentPageIndex}{\value{page}}%
+		\pagestyle{plain}\pagenumbering{arabic}\setcounter{page}{1}%
+		\@firstchapterfalse
+	\fi
+	\addcontentsline{toc}{chapter}{#1}%
+	\noindent\huge\textbf{#1}\par\vspace{1cm}\normalsize
+}
+\makeatother
+
+\begin{document}
+
+% ---------- Bìa và phụ bìa (thứ tự theo quy định mục 2) ----------
+\input{thongtin}
+\makecovers
+
+% ---------- Tóm tắt, lời cam đoan ----------
+\input{phandau/tomtat}
+\input{phandau/camdoan}
+
+% ---------- Mục lục, danh sách hình, bảng, chữ viết tắt ----------
+\begin{contentlisting}
+\tableofcontents
+\listoffigures
+\listoftables
+\input{phandau/viettat}
+\end{contentlisting}
+
+% ---------- Nội dung chính ----------
+\input{chuong/mo-dau}
+\input{chuong/chuong1}
+\input{chuong/chuong2}
+\input{chuong/chuong3}
+\input{chuong/chuong4}
+\input{chuong/chuong5}
+\input{chuong/chuong6}
+% Chương 7 (Cải tiến và mở rộng) tạm không đưa vào báo cáo giữa kỳ này — báo cáo giữa kỳ chỉ
+% tập trung tái hiện bài báo gốc. File chuong/chuong7.tex vẫn giữ nguyên nội dung (RNN/LSTM/GRU,
+% Bidirectional LSTM, time-series CV) để dùng lại cho báo cáo cuối kỳ.
+\input{chuong/ket-luan}
+
+\input{tailieu}
+
+\end{document}

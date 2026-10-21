@@ -1,0 +1,132 @@
+% CHƯƠNG 1 - Rubric: Phát biểu bài toán
+\chapter{Bài toán dự báo sự kiện và ý tưởng Future-Guided Learning}
+\label{chuong:baitoan}
+
+\section{Đánh đổi giữa tính hữu dụng và độ chính xác trong dự báo sự kiện}
+
+Dự báo sự kiện theo chuỗi thời gian (time-series event forecasting) là bài toán xác định
+liệu một biến cố quan tâm --- chẳng hạn một cơn động kinh, một lần hỏng hóc thiết bị, hay một
+thay đổi mạnh trong động lực của một hệ --- có xảy ra trong một khoảng thời gian tới hay
+không, dựa trên các quan sát đã có. Bài toán này, cùng với bài toán dự báo hồi quy giá trị
+tương lai của chuỗi, có một đặc điểm chung gây khó khăn cho việc thiết kế mô hình: mối quan hệ
+ngược giữa thời điểm dự báo và chất lượng dự báo.
+
+Nếu dự báo được thực hiện \textit{sớm}, tức còn cách xa thời điểm sự kiện xảy ra, thì kết quả
+dự báo \textit{hữu dụng} vì còn đủ thời gian để phản ứng (ví dụ cảnh báo bệnh nhân hoặc bác sĩ
+trước khi cơn động kinh xảy ra), nhưng lại \textit{khó và kém chính xác}, vì các tín hiệu báo
+trước sự kiện còn mơ hồ, lẫn trong nhiễu của hoạt động bình thường. Ngược lại, nếu dự báo được
+thực hiện \textit{muộn}, gần sát hoặc ngay tại thời điểm sự kiện, thì kết quả \textit{dễ và
+chính xác} hơn nhiều, vì các dấu hiệu của sự kiện đã rõ ràng, nhưng lại \textit{không còn giá
+trị thực tiễn}, vì không còn thời gian để hành động. Với bài toán dự báo hồi quy một chuỗi
+thời gian xa về phía trước ($H$ bước), hiện tượng tương tự xảy ra: dự báo xa (tầm dự báo $H$
+lớn) khó và sai số cao hơn dự báo gần (tầm dự báo nhỏ), vì bất định tích lũy theo thời gian,
+đặc biệt với các hệ có tính hỗn loạn (chaotic).
+
+Phần lớn các phương pháp học sâu cho dự báo chuỗi thời gian huấn luyện một mô hình duy nhất
+trực tiếp trên nhiệm vụ khó (dự báo sớm, hoặc dự báo xa), buộc mô hình phải tự học cách xử lý
+độ khó này mà không có thêm thông tin hỗ trợ nào khác ngoài chính dữ liệu đầu vào và nhãn thật.
+Câu hỏi đặt ra là: liệu có thể tận dụng được một mô hình \textit{khác}, đã học tốt trên một
+phiên bản \textit{dễ hơn} của cùng bài toán, để hỗ trợ việc huấn luyện mô hình chính giải
+quyết phiên bản \textit{khó}?
+
+\section{Ý tưởng Future-Guided Learning}
+
+Future-Guided Learning (FGL), phương pháp đề xuất trong bài báo của Gunasekaran và cộng sự
+\cite{gunasekaran2025fgl}, trả lời câu hỏi trên bằng cách tách bài toán thành hai mô hình:
+
+\begin{itemize}
+	\item \textbf{Teacher}: được huấn luyện trên một phiên bản \textit{dễ hơn} của bài toán,
+	sử dụng dữ liệu ở \textit{tương lai gần hơn} so với student --- gần hoặc ngay tại thời
+	điểm sự kiện xảy ra (với bài toán phân loại sự kiện), hoặc chỉ cần ngoại suy một bước thay
+	vì nhiều bước (với bài toán hồi quy). Vì nhiệm vụ dễ, teacher học nhanh và đạt độ chính xác
+	cao.
+	\item \textbf{Student}: giải quyết nhiệm vụ \textit{khó} thực sự cần dùng trong thực tế ---
+	dự báo sớm, hoặc dự báo xa --- chỉ dùng dữ liệu ở \textit{quá khứ tương đối} so với teacher.
+	\item \textbf{Cầu nối}: trong lúc huấn luyện student, cùng một batch dữ liệu đầu vào được
+	đưa qua cả teacher và student, rồi phân phối xác suất đầu ra của student được ép
+	\textit{bắt chước} phân phối của teacher thông qua chưng cất tri thức (knowledge
+	distillation), đo bằng độ phân kỳ Kullback--Leibler (KL).
+\end{itemize}
+
+Tác giả cho biết ý tưởng này lấy cảm hứng từ lý thuyết \textit{predictive coding} trong khoa
+học thần kinh, theo đó não bộ liên tục tạo dự báo trước cho tín hiệu cảm giác sẽ đến, rồi điều
+chỉnh dựa trên chênh lệch giữa dự báo và tín hiệu thực tế nhận được \cite{raoballard1999predictive}.
+Trong FGL, vai trò ``tín hiệu sửa sai'' này được đóng bởi hàm mất mát chưng cất tri thức giữa
+teacher và student: teacher đóng vai trò nguồn thông tin về tương lai gần, còn quá trình chưng
+cất đóng vai trò cơ chế truyền thông tin đó về cho student, dù student không được phép ``nhìn
+thấy'' trực tiếp dữ liệu tương lai mà teacher có.
+
+Điểm mấu chốt cần làm rõ khi phát biểu bài toán là: cơ chế ``nhìn thấy tương lai'' của teacher
+\textit{không} có nghĩa là teacher được truy cập dữ liệu mà student không được phép dùng khi
+suy luận (inference) trên dữ liệu mới. Teacher chỉ được huấn luyện \textit{tách biệt}, trên
+một nhiệm vụ khác (dễ hơn) với nhiệm vụ của student; khi student dự báo một chuỗi mới trong
+thực tế, chỉ có student (đã được chưng cất tri thức từ teacher trong lúc huấn luyện) mới được
+dùng để suy luận, teacher không còn tham gia.
+
+\section{Phát biểu hình thức}
+
+Xét một mô hình teacher $f_T$ và một mô hình student $f_S$, cùng xử lý chuỗi quan sát đầu vào
+$\mathbf{x}$, nhưng được huấn luyện trên hai phiên bản nhãn khác nhau của cùng một đích dự
+báo: $y^{(T)}$ (nhãn của nhiệm vụ dễ, teacher) và $y^{(S)}$ (nhãn của nhiệm vụ khó, student),
+với $y^{(T)}$ và $y^{(S)}$ cùng nhằm tới một mốc đích --- hoặc cùng một thời điểm tuyệt đối
+trong bài toán hồi quy, hoặc cùng một sự kiện trong bài toán phân loại --- nhưng khác nhau về
+lượng thông tin ``tương lai'' mà đầu vào tương ứng của mỗi mô hình chứa.
+
+Teacher được huấn luyện độc lập trước, tối thiểu hóa một hàm mất mát chuẩn (ví dụ sai số bình
+phương trung bình với hồi quy, hoặc entropy chéo với phân loại) trên nhiệm vụ của nó. Sau khi
+teacher đã huấn luyện xong, student được huấn luyện với hàm mất mát tổng hợp
+\begin{equation}
+	\mathcal{L}_{\text{student}} = \alpha \cdot \mathcal{L}_{\text{CE}}\!\left(y^{(S)}, f_S(\mathbf{x})\right) \;+\; (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\!\left(\operatorname{softmax}\!\left(\frac{f_T(\mathbf{x})}{T}\right) \,\middle\|\, \operatorname{softmax}\!\left(\frac{f_S(\mathbf{x})}{T}\right)\right),
+	\label{eq:fgl-loss}
+\end{equation}
+trong đó $f_T(\mathbf{x})$ và $f_S(\mathbf{x})$ là logits (đầu ra trước softmax) của teacher
+và student trên \textit{cùng} đầu vào $\mathbf{x}$ của student, $\alpha \in [0,1]$ cân bằng
+giữa việc tin vào nhãn thật và tin vào teacher, còn $T$ (temperature) làm mềm phân phối xác
+suất trước khi so sánh. Chi tiết và ý nghĩa của từng tham số được trình bày trong
+Chương~\ref{chuong:phuongphap}.
+
+Cần nhấn mạnh rằng công thức \eqref{eq:fgl-loss} chỉ xác định được \textit{dạng toán học} của
+cơ chế chưng cất; việc teacher và student \textit{cụ thể} nhìn vào phần dữ liệu nào, và nhãn
+$y^{(T)}$, $y^{(S)}$ được định nghĩa ra sao, mới là phần quyết định ``tương lai'' nghĩa là gì
+trong từng bài toán --- đây là điểm khác biệt chính giữa hai ứng dụng được tái hiện trong báo
+cáo này (Chương~\ref{chuong:phuongphap}, mục~\ref{sec:cochetuonglai}).
+
+\section{Khó khăn và thách thức}
+
+Việc hiện thực hóa ý tưởng FGL gặp một số khó khăn chính sau.
+
+Thứ nhất là việc áp dụng chưng cất tri thức --- vốn được định nghĩa trên phân phối xác suất
+rời rạc của bài toán phân loại \cite{hinton2015distillation} --- cho bài toán \textit{hồi quy}
+(dự báo giá trị liên tục của chuỗi thời gian). Cần một cách chuyển bài toán hồi quy thành bài
+toán phân loại để có thể tính KL divergence giữa teacher và student.
+
+Thứ hai là việc xác định cụ thể ``tương lai gần hơn'' nghĩa là gì cho từng loại bài toán. Với
+bài toán hồi quy trên một chuỗi liên tục, không có khái niệm ``nhãn khác'' rõ ràng như bài toán
+phân loại sự kiện; cần một cách lệch cửa sổ dữ liệu đầu vào sao cho teacher và student cùng
+hướng tới một đích, nhưng xuất phát điểm khác nhau.
+
+Thứ ba, với bài toán dự báo sự kiện y tế như cơn động kinh, dữ liệu ở giai đoạn ngay trước sự
+kiện (tiền triệu, preictal) thường rất hiếm so với dữ liệu bình thường (interictal), gây mất
+cân bằng lớp nghiêm trọng, ảnh hưởng đến cả việc huấn luyện teacher (nếu teacher cũng cần nhãn
+sự kiện) và student.
+
+Thứ tư là chi phí tính toán và độ phức tạp triển khai: FGL yêu cầu huấn luyện và lưu trữ hai
+mô hình thay vì một, cùng với việc phải chạy suy luận của teacher trong suốt quá trình huấn
+luyện student để tính hàm mất mát chưng cất.
+
+\section{Đóng góp của bài báo gốc}
+
+Từ các phân tích trên, đóng góp chính của bài báo gốc có thể tóm lược như sau
+\cite{gunasekaran2025fgl}:
+\begin{itemize}
+	\item Đề xuất khung Future-Guided Learning, áp dụng được cho cả bài toán dự báo hồi quy và
+	bài toán dự báo sự kiện nhị phân, chỉ bằng cách thay đổi cách định nghĩa dữ liệu và nhãn
+	của teacher.
+	\item Đề xuất cách rời rạc hóa bài toán hồi quy (chia khoảng giá trị thành các lớp) để áp
+	dụng được chưng cất tri thức dựa trên KL divergence, vốn chỉ định nghĩa tự nhiên trên bài
+	toán phân loại.
+	\item Thực nghiệm trên ba bộ dữ liệu thuộc hai lĩnh vực khác nhau: chuỗi hỗn loạn tổng hợp
+	Mackey--Glass (dự báo hồi quy), và hai bộ dữ liệu điện não đồ CHB-MIT và AES (dự báo cơn
+	động kinh), báo cáo mức giảm 23,4\% sai số MSE trên Mackey--Glass và mức tăng 44,8\% AUC-ROC
+	trung bình trên CHB-MIT so với mô hình không dùng FGL.
+\end{itemize}

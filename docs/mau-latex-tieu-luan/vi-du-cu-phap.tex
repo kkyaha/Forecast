@@ -1,0 +1,79 @@
+% =====================================================================
+% VÍ DỤ CÚ PHÁP - file riêng, KHÔNG nằm trong báo cáo.
+% Dùng để xem cách viết công thức, bảng, hình, trích dẫn rồi chép sang các chương.
+% Trên Overleaf: Menu -> Main document -> chọn file này để biên dịch thử,
+% xem xong thì chọn lại main.tex.
+% Nội dung dưới đây chỉ là chữ minh họa, không liên quan bài báo.
+%
+% LƯU Ý: lớp uetgraduation viết hình và bảng KHÁC cách thông thường:
+% chú thích đặt ngay sau \begin{figure} hoặc \begin{table}, không dùng \caption.
+% =====================================================================
+\documentclass{uetgraduation}
+\usepackage{booktabs}
+\graphicspath{{hinh/}}
+\numberwithin{equation}{chapter}
+\mathfont[operator]{Latin Modern Roman}
+\newmathbold{\mathbf}{Latin Modern Roman}
+\newmathrm{\mathrm}{Latin Modern Roman}
+
+\begin{document}
+\setcounter{chapter}{2}
+\chapter{Ví dụ cú pháp}
+
+\section{Công thức có đánh số}
+Công thức tự đánh số ở lề phải theo chương, như yêu cầu của rubric:
+\begin{equation}
+	\hat{y}_{t+h} = f(y_1, y_2, \dots, y_t)
+	\label{eq:vidu}
+\end{equation}
+Nhắc lại công thức bằng \verb|\eqref{eq:vidu}| sẽ ra \eqref{eq:vidu}.
+Công thức nằm trong dòng viết giữa hai dấu đô la, ví dụ $y_t$ với $t = 1, \dots, T$.
+
+\section{Bảng}
+Chú thích bảng tự hiện ở trên đầu bảng (quy định mục 4).
+Nhắc bảng bằng \verb|\ref{bang:vidu}|: xem Bảng~\ref{bang:vidu}.
+
+\begin{table}[H]{Ví dụ bảng kết quả (số liệu minh họa)}
+	\label{bang:vidu}
+	\centering
+	\begin{tabular}{lcc}
+		\toprule
+		\textbf{Mô hình} & \textbf{Bài báo} & \textbf{Tái hiện} \\
+		\midrule
+		Mô hình A & 1,00 & 1,02 \\
+		Mô hình B & 2,00 & 1,98 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\section{Hình}
+Chú thích hình tự hiện ở dưới hình. File ảnh đặt trong thư mục \texttt{hinh/},
+viết tên không cần đuôi. Nhắc hình: xem Hình~\ref{hinh:vidu}.
+
+\begin{figure}[H]{Ví dụ hình (ảnh mẫu có sẵn trong LaTeX)}
+	\label{hinh:vidu}
+	\centering
+	\includegraphics[width=0.6\textwidth]{example-image}
+\end{figure}
+
+\section{Trích dẫn tài liệu}
+Viết \verb|\cite{zhong2025osp}| sẽ ra số trong ngoặc vuông \cite{zhong2025osp}.
+
+\section{Gạch đầu dòng}
+\begin{itemize}
+	\item Ý thứ nhất.
+	\item Ý thứ hai.
+\end{itemize}
+
+\subsection{Tiểu mục}
+Tiểu mục được đánh ba số. Nhớ để một dòng trống trước tiêu đề mục tiếp theo.
+
+\begin{thebibliography}{9}
+\begin{bibsection}{Tiếng Anh}
+\bibitem{zhong2025osp}
+	Y. Zhong, Y. Ren, G. Cao, F. Li, H. Qi,
+	``Optimal starting point for time series forecasting'',
+	\textit{Expert Systems with Applications}, 2025.
+\end{bibsection}
+\end{thebibliography}
+\end{document}

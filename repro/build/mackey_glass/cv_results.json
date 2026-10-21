@@ -1,0 +1,92 @@
+[
+  {
+    "fold": 1,
+    "prefix_frac": 0.7,
+    "n_points": 7000,
+    "arch": "rnn",
+    "teacher_mse": 6.9168458781362006,
+    "baseline_mse": 148.83917083631164,
+    "student_mse": 112.5396711937098,
+    "drop_pct": 24.38840490620767
+  },
+  {
+    "fold": 1,
+    "prefix_frac": 0.7,
+    "n_points": 7000,
+    "arch": "lstm",
+    "teacher_mse": 5.864516129032258,
+    "baseline_mse": 145.90564689063618,
+    "student_mse": 98.0264474624732,
+    "drop_pct": 32.81517915756263
+  },
+  {
+    "fold": 1,
+    "prefix_frac": 0.7,
+    "n_points": 7000,
+    "arch": "gru",
+    "teacher_mse": 5.8,
+    "baseline_mse": 140.29807005003573,
+    "student_mse": 101.98856325947105,
+    "drop_pct": 27.30579741895382
+  },
+  {
+    "fold": 2,
+    "prefix_frac": 0.85,
+    "n_points": 8500,
+    "arch": "rnn",
+    "teacher_mse": 5.398230088495575,
+    "baseline_mse": 139.84049440847556,
+    "student_mse": 98.63154796939376,
+    "drop_pct": 29.468536001245845
+  },
+  {
+    "fold": 2,
+    "prefix_frac": 0.85,
+    "n_points": 8500,
+    "arch": "lstm",
+    "teacher_mse": 4.549852507374632,
+    "baseline_mse": 136.14243672748677,
+    "student_mse": 91.5927015891701,
+    "drop_pct": 32.722886565847844
+  },
+  {
+    "fold": 2,
+    "prefix_frac": 0.85,
+    "n_points": 8500,
+    "arch": "gru",
+    "teacher_mse": 4.6070796460176995,
+    "baseline_mse": 139.0276633313714,
+    "student_mse": 96.87404355503237,
+    "drop_pct": 30.320310912416176
+  },
+  {
+    "fold": 3,
+    "prefix_frac": 1.0,
+    "n_points": 10000,
+    "arch": "rnn",
+    "teacher_mse": 5.439097744360902,
+    "baseline_mse": 139.3831915957979,
+    "student_mse": 104.39419709854927,
+    "drop_pct": 25.102735915758352
+  },
+  {
+    "fold": 3,
+    "prefix_frac": 1.0,
+    "n_points": 10000,
+    "arch": "lstm",
+    "teacher_mse": 4.4145363408521305,
+    "baseline_mse": 144.61080540270135,
+    "student_mse": 97.39669834917459,
+    "drop_pct": 32.64908657554908
+  },
+  {
+    "fold": 3,
+    "prefix_frac": 1.0,
+    "n_points": 10000,
+    "arch": "gru",
+    "teacher_mse": 4.73734335839599,
+    "baseline_mse": 142.0975487743872,
+    "student_mse": 98.71885942971485,
+    "drop_pct": 30.527401576466374
+  }
+]

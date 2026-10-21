@@ -36,7 +36,7 @@ class EarlyStopper:
 def train_student_model(student_horizon, alpha, num_bins,
                         val_size, test_size, epochs,
                         temperature, lookback_window, batch_size,
-                        patience=5, seed=42, arch='rnn'):
+                        patience=5, seed=42, arch='rnn', external_data=None):
     torch.manual_seed(seed)
     print(f"\nTraining | Horizon={student_horizon} Alpha={alpha} "
           f"Num bins={num_bins} Val size={val_size} Test size={test_size}"
@@ -49,9 +49,12 @@ def train_student_model(student_horizon, alpha, num_bins,
     num_layers    = 2
     lr            = 1e-4
 
-    # load data
-    with open("data.pkl","rb") as f:
-        data = pickle.load(f)
+    # load data (or use a caller-provided slice, e.g. for cross-validation folds)
+    if external_data is not None:
+        data = external_data
+    else:
+        with open("data.pkl","rb") as f:
+            data = pickle.load(f)
 
     # teacher (1-step, offset=H-1)
     teacher_train, teacher_val, teacher_test, _, _ = create_time_series_dataset(
@@ -192,7 +195,7 @@ def train_student_model(student_horizon, alpha, num_bins,
     Bmse = evaluate(baseline, student_test); print(f"Baseline Test MSE: {Bmse:.4f}")
     Smse = evaluate(student, student_test); print(f"Student Test MSE:  {Smse:.4f}")
 
-    return None
+    return {"teacher": Tmse, "baseline": Bmse, "student": Smse}
 
 # … rest of your __main__ unchanged …
 

@@ -269,6 +269,73 @@ done
 
 ---
 
+## Lần chạy 5 — Time-series cross-validation (rolling-origin) trên 3 kiến trúc
+
+### Động cơ
+
+Lần chạy 4 (sweep 6 seed) chỉ đổi khởi tạo trọng số ngẫu nhiên, trong khi điểm chia train/
+val/test trên chuỗi Mackey-Glass luôn cố định (60/20/20 đầu chuỗi). Để kiểm tra riêng ảnh hưởng
+của **vị trí chia dữ liệu** tới mức cải thiện FGL, thêm thực nghiệm time-series cross-
+validation kiểu rolling-origin (mở rộng cửa sổ, tương đương `sklearn.TimeSeriesSplit`). Lưu ý:
+đây **không phải** k-fold chuẩn (xáo trộn ngẫu nhiên) — xáo trộn sẽ làm rò dữ liệu tương lai
+vào lúc huấn luyện, không hợp lệ với time series.
+
+### Thiết kế
+
+- Thêm tham số `external_data` (mặc định `None`) vào `train_student_model` trong
+  `build/mackey_glass/exp/base_exp.py`, để truyền vào một prefix của `data.pkl` thay vì luôn
+  đọc toàn bộ file — không đổi hành vi cũ, đã xác nhận `--horizon 5 --num_bins 50 --alpha 0.5
+  --epochs 20` (không truyền `external_data`) vẫn ra đúng số liệu Lần chạy 1
+  (Teacher 5.4391, Baseline 139.3832, Student 104.3942).
+- File mới `build/mackey_glass/exp/cv_exp.py`: dùng 3 prefix ngày càng dài của `data.pkl`
+  (70%, 85%, 100% của 10000 điểm) làm 3 "fold"; trong mỗi fold, logic chia 60/20/20 cũ của
+  `create_time_series_dataset` vẫn áp dụng như bình thường (không sửa file này) — vì vậy tập
+  test của mỗi fold nằm ở một đoạn càng về sau trên chuỗi gốc (expanding window đúng kiểu
+  rolling-origin CV).
+
+### Lệnh chạy (từ `repro/build/mackey_glass/`)
+
+```
+PYTHONPATH=. python exp/cv_exp.py --horizon 5 --num_bins 50 --alpha 0.5 --epochs 20 --seed 42 --archs rnn,lstm,gru
+```
+
+### Kết quả
+
+| Fold (% dữ liệu) | Kiến trúc | Teacher MSE | Baseline MSE | Student MSE | Giảm MSE |
+|---|---|---|---|---|---|
+| 1 (70%, N=7000)  | RNN  | 6,9168 | 148,8392 | 112,5397 | 24,39% |
+| 1 (70%, N=7000)  | LSTM | 5,8645 | 145,9056 | 98,0264  | 32,82% |
+| 1 (70%, N=7000)  | GRU  | 5,8000 | 140,2981 | 101,9886 | 27,31% |
+| 2 (85%, N=8500)  | RNN  | 5,3982 | 139,8405 | 98,6315  | 29,47% |
+| 2 (85%, N=8500)  | LSTM | 4,5499 | 136,1424 | 91,5927  | 32,72% |
+| 2 (85%, N=8500)  | GRU  | 4,6071 | 139,0277 | 96,8740  | 30,32% |
+| 3 (100%, N=10000)| RNN  | 5,4391 | 139,3832 | 104,3942 | 25,10% |
+| 3 (100%, N=10000)| LSTM | 4,4145 | 144,6108 | 97,3967  | 32,65% |
+| 3 (100%, N=10000)| GRU  | 4,7373 | 142,0975 | 98,7189  | 30,53% |
+
+| Kiến trúc | Giảm MSE trung bình (3 fold) |
+|---|---|
+| RNN | 26,32% (±2,25) |
+| LSTM | **32,73% (±0,07)** |
+| GRU | 29,38% (±1,47) |
+
+### Nhận định
+
+- **Fold 3 (100% dữ liệu) khớp chính xác từng số lẻ** với số liệu seed=42 của Lần chạy 1/2/4
+  (RNN 25,10%, LSTM 32,65%, GRU 30,53%) — vì fold 3 dùng đúng cấu hình cũ (toàn bộ chuỗi,
+  60/20/20) — xác nhận script `cv_exp.py` cài đặt đúng, không có lỗi âm thầm làm lệch số liệu.
+- **Cả 3 kiến trúc cải thiện dương trên cả 3 fold**, không có trường hợp âm — khác với Lần
+  chạy 3 (quét horizon), nơi horizon=2 là ngoại lệ âm.
+- **LSTM có độ lệch chuẩn giữa fold rất nhỏ (0,07 điểm %)**, nhỏ hơn hẳn RNN (2,25) và GRU
+  (1,47) — mức cải thiện của LSTM ổn định không chỉ qua seed khởi tạo (Lần chạy 4) mà còn qua
+  vị trí chia dữ liệu khác nhau trên chuỗi — bằng chứng bổ sung ủng hộ chọn LSTM.
+- Hạn chế: chỉ 3 fold, 1 seed mỗi fold (không lặp seed × fold đầy đủ do giới hạn thời gian máy
+  cá nhân, batch_size=1 mặc định của tác giả khiến mỗi lần train khá chậm trên CPU) — nên kết
+  quả là "bằng chứng bổ sung", chưa phải kiểm định thống kê đầy đủ (seed × fold đầy đủ sẽ cần
+  nhiều lần chạy hơn).
+
+---
+
 ## Quyết định: KHÔNG tiếp tục track EEG (CHB-MIT / AES)
 
 ### Chuẩn bị đã làm
@@ -305,3 +372,156 @@ base_exp 6 seed trung bình giảm MSE 26,42%, drift_exp 13/14 horizon cải thi
 mạng tốt hơn tới PhysioNet (ví dụ từ mạng trường/viện nghiên cứu) hoặc quyết định đáng
 bỏ thời gian chờ tải.
 
+---
+
+## Lần chạy 6 — CHB-MIT trên Kaggle (patient 1), bản gốc tác giả (đã tái hiện đầy đủ 3 Stage)
+
+**Về nguồn code**: chạy trực tiếp từ clone sạch của repo gốc tác giả
+(`SkyeGunasekaran/FutureGuidedLearning`, thư mục Kaggle
+`/kaggle/working/FutureGuidedLearning/CHBMIT`) — **không** phải từ kho cá nhân
+`kkyaha/Forecast` và **không** dùng cờ `--bidirectional` (cờ này không tồn tại trong repo gốc,
+truyền vào sẽ báo lỗi `unrecognized arguments` ngay lập tức — tức nếu lệnh chạy thành công và
+ra kết quả, chắc chắn không dùng cờ đó). Đã xác nhận lại với người chạy thực nghiệm và đối
+chiếu đúng dòng lệnh gốc. Đây là số liệu tái hiện thuần túy, dùng cho báo cáo giữa kỳ.
+
+### Lệnh đã chạy (patient 1; patient 3, 5 không chạy được do chưa tải dữ liệu)
+
+```
+PYTHONPATH=. python exp/seizure_detection.py --patient 1 --epochs 50 --patience 5     # x3 lần
+python -m exp.seizure_prediction --patient 1 --model CNN_LSTM --trials 3 --epochs 25  # x3 lần (x3 trial/lần)
+python -m exp.FGL_CHBMIT --patient 1 --epochs 30 --trials 3 --optimizer Adam --alpha 0.5 --temperature 4   # x3 lần (x3 trial/lần)
+```
+
+### Kết quả
+
+**Stage 1 — Teacher/Detection, AUC-ROC, 3 lần chạy:**
+
+| Lần | AUC-ROC |
+|---|---|
+| 1 | 0,6252 |
+| 2 | 0,6431 |
+| 3 | 0,6669 |
+| **Trung bình** | **0,6451 (±0,0171)** |
+
+So với lần chạy local trước đó (AUC=0,28, thấp hơn ngẫu nhiên, mục "Trạng thái tái hiện trên
+máy này" ở `PHAN_TICH_LY_THUYET_VA_CODE.md`): cả 3 lần chạy trên Kaggle đều cho AUC hợp lý
+(0,63–0,67, cao hơn ngẫu nhiên 0,5 rõ rệt) — ngược hẳn với kết quả local. Vì script
+`seizure_detection.py` không cố định seed (`torch.manual_seed`), nhiều khả năng lần chạy local
+0,28 là một lần khởi tạo ngẫu nhiên không may, không phải lỗi hệ thống do `shuffle=False` như
+nghi vấn trước đó — nhưng nghi vấn `shuffle=False` vẫn là một quan sát hợp lệ về thiết kế code,
+chưa bị bác bỏ hoàn toàn, chỉ là chưa đủ bằng chứng khẳng định đó là *nguyên nhân chính*.
+
+**Stage 2 — Baseline (Seizure Prediction, không FGL), [FPR, Sensitivity, AUC-ROC] × 3 trial × 3 lần chạy:**
+
+| Lần chạy | Trial 1 | Trial 2 | Trial 3 |
+|---|---|---|---|
+| 1 | [0,052; 1,000; 0,9972] | [0,082; 0,967; 0,9872] | [0,048; 0,725; 0,8610] |
+| 2 | [0,015; 1,000; 0,9991] | [0,024; 0,708; 0,9217] | [0,022; 0,892; 0,9714] |
+| 3 | [0,115; 0,642; 0,7815] | [0,031; 0,875; 0,9733] | [0,491; 0,992; 0,7628] |
+
+AUC-ROC trung bình (9 trial): **0,9173 (±0,0879)**, dao động 0,7628–0,9991.
+
+**Stage 3 — Student/FGL (bản gốc, alpha=0.5), AUC-ROC × 3 trial × 3 lần chạy:**
+
+| Lần chạy | Trial 1 | Trial 2 | Trial 3 |
+|---|---|---|---|
+| 1 | 0,9881 | 0,9285 | 0,9615 |
+| 2 | 0,4376 | 0,9413 | 0,9310 |
+| 3 | 0,9881 | 0,9905 | 0,9948 |
+
+AUC-ROC trung bình (9 trial): **0,9068 (±0,1678)**, dao động 0,4376–0,9948.
+Loại 1 trial bất thường (lần chạy 2, trial 1 = 0,4376, gần ngẫu nhiên): 8 trial còn lại trung
+bình **0,9655 (±0,0266)**.
+
+### Nhận định
+
+- **Teacher/Detection hợp lý trên cả 3 lần chạy** (0,63–0,67, cao hơn ngẫu nhiên 0,5 rõ rệt) —
+  ngược hẳn với lần chạy local trước đó (AUC=0,28, thấp hơn ngẫu nhiên, mục "Trạng thái tái
+  hiện trên máy này" ở `PHAN_TICH_LY_THUYET_VA_CODE.md`). Vì `seizure_detection.py` không cố
+  định seed (`torch.manual_seed`), nhiều khả năng lần chạy local 0,28 là một lần khởi tạo ngẫu
+  nhiên không may, không phải lỗi hệ thống do `shuffle=False` như nghi vấn trước đó — nghi vấn
+  `shuffle=False` chưa bị bác bỏ hoàn toàn nhưng không còn đủ bằng chứng khẳng định là nguyên
+  nhân chính.
+- **So Baseline vs Student (FGL) — không ủng hộ rõ claim 44,8% của bài báo**: tính trên toàn bộ
+  9 trial, AUC trung bình giảm nhẹ (0,9173 → 0,9068, **−1,14%**), chủ yếu do 1 trial sụp (AUC
+  0,4376). Nếu loại trial này, Student trung bình **0,9655**, cao hơn Baseline (0,9173) khoảng
+  **+5,25%** — vẫn thấp hơn rất nhiều so với 44,8% bài báo công bố, và việc loại bỏ 1/9 trial
+  (hơn 11% số liệu) để có con số dương cần được nêu rõ là một lựa chọn diễn giải, không phải
+  kết quả "sạch".
+- **Độc lập ngẫu nhiên, không cố định seed**: cả `seizure_prediction.py` và `FGL_CHBMIT.py`
+  không gọi `torch.manual_seed`, nên 9 trial của mỗi mô hình là 9 lần khởi tạo ngẫu nhiên hoàn
+  toàn độc lập — độ lệch chuẩn lớn (đặc biệt Student, ±0,168, chủ yếu do 1 trial sụp) phản ánh
+  đúng mức bất ổn định thực sự của việc không cố định seed trong mã nguồn tác giả, không phải
+  lỗi đo đạc của báo cáo.
+- **Khác biệt với Mackey-Glass**: trên Mackey-Glass, FGL cải thiện nhất quán trên toàn bộ 6/6
+  seed (Lần chạy 2). Trên CHB-MIT, FGL **không** cho thấy cải thiện nhất quán tương tự — đây là
+  một phát hiện quan trọng cần nêu trung thực trong báo cáo, không nên chỉ trích dẫn mức tăng
+  44,8% của bài báo mà bỏ qua việc tái hiện không khớp.
+
+
+---
+
+## Lần chạy 7 — CHB-MIT trên Kaggle, mở rộng sang bệnh nhân 3 và 5
+
+Sau Lần chạy 6 (chỉ bệnh nhân 1, vì ban đầu chỉ tải được dữ liệu bệnh nhân này), tải thêm được
+dữ liệu bệnh nhân 3 và 5 (cũng thuộc danh sách 12 bệnh nhân mặc định của tác giả), chạy đủ ba
+Stage cho mỗi bệnh nhân (một lần chạy, ba trial mỗi lần cho Stage 2–3), cùng bản gốc tác giả,
+không bidirectional.
+
+### Kết quả thô
+
+**Stage 1 — Teacher/Detection, AUC-ROC:**
+
+| Bệnh nhân | AUC-ROC |
+|---|---|
+| 3 | 0,9067 |
+| 5 | 0,9911 |
+
+**Stage 2 — Baseline, [FPR, Sensitivity, AUC-ROC] × 3 trial:**
+
+| Bệnh nhân | Trial 1 | Trial 2 | Trial 3 |
+|---|---|---|---|
+| 3 | [0,416; 0,617; 0,5991] | [0,999; 1,000; 0,2956] | [0,726; 0,942; 0,3882] |
+| 5 | [0,979; 1,000; 0,1202] | [0,964; 1,000; 0,3890] | [0,000; 0,000; 0,0797] |
+
+**Stage 3 — Student/FGL, AUC-ROC × 3 trial:**
+
+| Bệnh nhân | Trial 1 | Trial 2 | Trial 3 |
+|---|---|---|---|
+| 3 | 0,7989 | 0,9537 | 0,4234 |
+| 5 | 0,8255 | 0,1313 | 0,2135 |
+
+### Tổng hợp cả ba bệnh nhân (1, 3, 5)
+
+| Bệnh nhân | Baseline AUC (TB) | Student AUC (TB) | Tăng |
+|---|---|---|---|
+| 1 (9 trial) | 0,9173 | 0,9068 | −1,1% |
+| 3 (3 trial) | 0,4276 | 0,7253 | +69,6% |
+| 5 (3 trial) | 0,1963 | 0,3901 | +98,7% |
+
+Hai cách gộp:
+- **Gộp theo trial** (15 Baseline + 15 Student, không phân biệt bệnh nhân): Baseline TB
+  **0,6751**, Student TB **0,7672** → tăng **+13,63%**. Bị chi phối bởi bệnh nhân 1 (9/15 =
+  60% trial).
+- **Trung bình của trung bình từng bệnh nhân** (mỗi bệnh nhân góp 1 điểm, không phân biệt số
+  trial): Baseline TB **0,5137**, Student TB **0,6741** → tăng **+31,21%**.
+
+### Nhận định
+
+- **Baseline hoạt động rất khác nhau giữa bệnh nhân**: AUC từ 0,1963 (bệnh nhân 5, có 1 trial
+  suy biến thành bộ phân loại toàn-lớp-âm, FPR=Sensitivity=0) đến 0,9173 (bệnh nhân 1). Đây là
+  dấu hiệu `CNN_LSTM_Model` + kịch bản huấn luyện của tác giả không ổn định giữa các bệnh nhân
+  có đặc điểm dữ liệu khác nhau (lượng ictal, tỉ lệ mất cân bằng lớp...).
+- **Mức tăng tương đối lớn nhất rơi vào bệnh nhân có Baseline kém nhất** (3, 5) — gợi ý FGL có
+  thể "cứu" được các trường hợp Baseline thất bại nặng, nhưng mức tăng % lớn một phần do mẫu số
+  (AUC Baseline) quá nhỏ, không hẳn vì Student đạt AUC tuyệt đối cao (Student bệnh nhân 5 vẫn
+  chỉ 0,39 — còn khá kém).
+- **Cả 2 cách gộp đều thấp hơn 44,8% công bố**, nhưng cách "trung bình của trung bình theo bệnh
+  nhân" (+31,21%) gần hơn nhiều so với cách gộp theo trial (+13,63%) — gợi ý nếu bài báo tính
+  trung bình theo đơn vị bệnh nhân (không theo trial) trên nhiều bệnh nhân hơn, con số có thể
+  tiến gần 44,8% hơn những gì quan sát được ở đây với chỉ 3 bệnh nhân, 1-3 lần chạy mỗi bệnh
+  nhân.
+- **Cỡ mẫu còn rất nhỏ** (bệnh nhân 3, 5 mới có 1 lần chạy = 3 trial mỗi bệnh nhân) để kết luận
+  chắc chắn — cần chạy lại nhiều lần hơn cho từng bệnh nhân, và mở rộng sang các bệnh nhân khác
+  trong danh sách 12 bệnh nhân mặc định của tác giả, mới có thể so sánh công bằng với con số
+  44,8% (có thể được tính trên toàn bộ hoặc phần lớn 12 bệnh nhân này).
