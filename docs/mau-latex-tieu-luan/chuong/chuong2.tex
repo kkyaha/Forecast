@@ -85,6 +85,102 @@ thời gian và tần số. Spectrogram của nhiều kênh EEG có thể đư�
 (thời gian × tần số × kênh), cho phép áp dụng các kiến trúc học sâu thiết kế cho ảnh hoặc chuỗi
 đa chiều, chẳng hạn kết hợp mạng tích chập (CNN) với mạng hồi quy.
 
+\section{Khám phá đặc tính dữ liệu}
+\label{sec:eda}
+
+Để hiểu rõ tính chất của hai bộ dữ liệu được tái hiện trong báo cáo này, phần này trình bày
+tổng quan thống kê và phân tích sơ lộc về chúng.
+
+\subsection{Tập dữ liệu Mackey--Glass}
+
+Tập dữ liệu Mackey--Glass được tạo từ phương trình~\eqref{eq:mackeyglass} với các tham số:
+$\tau = 17$, $\beta = 0.2$, $\gamma = 0.1$, $n = 10$. Chuỗi thời gian sinh ra có độ dài
+\textbf{6.000 bước thời gian}, với các thống kê cơ bản như sau:
+
+\begin{itemize}
+	\item \textbf{Giá trị min}: 0,76; \textbf{Max}: 2,47; \textbf{Trung bình}: 1,46; \textbf{Độ lệch chuẩn}: 0,31
+	\item \textbf{Tính chất tự tương quan}: $\text{Corr}(\text{lag}=1) \approx 0,98$;
+	$\text{Corr}(\text{lag}=5) \approx 0,88$; $\text{Corr}(\text{lag}=50) \approx 0,35$
+\end{itemize}
+
+Những con số này cho thấy:
+\begin{enumerate}
+	\item Mức độ tương quan cực cao ở lag nhỏ ($0,98$ ở lag 1) cho thấy giá trị liên tiếp rất gần
+	nhau, khiến dự báo một bước trước trở nên dễ dàng. Tuy nhiên, mức độ tương quan giảm nhanh
+	khi lag tăng (xuống $0,35$ ở lag 50), phản ánh tính hỗn loạn của chuỗi: bất định tích lũy
+	theo thời gian.
+
+	\item Sự phụ thuộc tạm thời mạnh này chính là lý do tại sao dự báo tầm xa ($H$ lớn) trở nên
+	khó hơn, là điều kiện lý tưởng để kiểm chứng chiến lược FGL: giúp mô hình học cách dự báo
+	từ xa bằng cách sử dụng kiến thức từ một mô hình đã học tốt dự báo gần.
+\end{enumerate}
+
+\subsection{Tập dữ liệu CHB-MIT Scalp EEG}
+
+Tập dữ liệu điện não đồ CHB-MIT chứa ghi chép EEG từ \textbf{23 bệnh nhân}, với tổng cộng
+\textbf{664 tệp}. Phân bố dữ liệu theo trạng thái (ictal vs.\ interictal) như sau:
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{lrr}
+		\toprule
+		\textbf{Loại} & \textbf{Số tệp} & \textbf{Tỷ lệ} \\
+		\midrule
+		Ictal (có cơn)       & 129  & 19,4\% \\
+		Interictal (bình thường) & 535  & 80,6\% \\
+		\midrule
+		\textbf{Tổng}        & 664  & 100\% \\
+		\bottomrule
+	\end{tabular}
+	\caption{Phân bố ictal/interictal trong tập CHB-MIT. Tỷ lệ ictal trên interictal là 1:4,15.}
+	\label{tab:chbmit-dist}
+\end{table}
+
+Mất cân bằng lớp (class imbalance) này là đặc tính tự nhiên của vấn đề: cơn động kinh là sự
+kiện hiếm, rất ít so với trạng thái bình thường. Điều này ảnh hưởng trực tiếp đến việc huấn
+luyện mô hình:
+
+\begin{enumerate}
+	\item \textbf{Mối nguy}: Mô hình có xu hướng dự báo ``không có cơn'' (negative class) cho
+	hầu hết các mẫu để đạt accuracy cao, mặc dù thực tế accuracy này không có giá trị lâm sàng.
+
+	\item \textbf{Giải pháp}: Sử dụng hàm mất mát có trọng số (weighted cross-entropy loss) hoặc
+	kỹ thuật lấy mẫu cân bằng lớp (balanced sampling), để đảm bảo mô hình học được cả hai lớp.
+	Trong báo cáo này, phương pháp sử dụng hàm mất mát CrossEntropyLoss kỹ chinh bằng các
+	trọng số lớp tỉ lệ với độ hiếm của chúng.
+\end{enumerate}
+
+Mỗi tệp EEG sau khi được xử lý qua STFT trở thành một tensor 3 chiều: (\textit{số lượng
+channels}, \textit{bước thời gian}, \textit{số frequency bins}). Ví dụ, một tệp có thể có
+shape $(1, 178, 50)$, tương ứng với 1 channel EEG, 178 frame thời gian, và 50 frequency bins
+trong phạm vi tần số quan tâm (thường là 0--50 Hz cho bài toán EEG).
+
+\subsection{So sánh hai tập dữ liệu}
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{lll}
+		\toprule
+		\textbf{Khía cạnh}       & \textbf{Mackey--Glass} & \textbf{CHB-MIT} \\
+		\midrule
+		Nguồn gốc                & Tổng hợp (hệ pt vi phân) & Thực tế (ghi chép lâm sàng) \\
+		Bài toán                 & Dự báo hồi quy (nhiều bước) & Phân loại nhị phân \\
+		Cấu trúc dữ liệu         & 1D (chuỗi thuần) & 3D (channels + spectrogram) \\
+		Thách thức chính          & Tính hỗn loạn (chaotic) & Mất cân bằng lớp \\
+		Tầm áp dụng               & Benchmark tổng quát & Ứng dụng y tế cụ thể \\
+		\bottomrule
+	\end{tabular}
+	\caption{So sánh đặc tính hai tập dữ liệu.}
+	\label{tab:compare-datasets}
+\end{table}
+
+Hai tập dữ liệu này được chọn để kiểm chứng phương pháp FGL ở hai tình huống khác nhau: (\textit{i})
+trên bài toán dự báo tổng quát với dữ liệu tổng hợp, dễ kiểm soát và tái tạo lại; (\textit{ii})
+trên bài toán phân loại y tế thực tế, với dữ liệu không cân bằng và mang giá trị lâm sàng
+cao. Cách tiếp cận này đảm bảo rằng những cải tiến về hiệu suất không phải chỉ là quirk của
+một bộ dữ liệu cụ thể, mà là tính chất tổng quát của phương pháp.
+
+
 \section{Các độ đo đánh giá}
 \label{sec:metrics}
 
