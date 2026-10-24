@@ -88,37 +88,46 @@ thời gian và tần số. Spectrogram của nhiều kênh EEG có thể đư�
 \section{Khám phá đặc tính dữ liệu}
 \label{sec:eda}
 
-Để hiểu rõ tính chất của hai bộ dữ liệu được tái hiện trong báo cáo này, phần này trình bày
-tổng quan thống kê và phân tích sơ lộc về chúng.
+Phần này trình bày thống kê mô tả của hai bộ dữ liệu được tái hiện trong báo cáo, đối chiếu
+với các tham số sinh dữ liệu và quy trình tiền xử lý mà bài báo gốc công bố
+\cite{gunasekaran2025fgl}. Các số liệu về tham số sinh dữ liệu và quy trình xử lý được trích
+trực tiếp từ bài báo; các số liệu thống kê mô tả (min, max, trung bình, tự tương quan, số tệp
+theo lớp) được tính trên chính dữ liệu dùng trong lần tái hiện này.
 
 \subsection{Tập dữ liệu Mackey--Glass}
 
-Tập dữ liệu Mackey--Glass được tạo từ phương trình~\eqref{eq:mackeyglass} với các tham số:
-$\tau = 17$, $\beta = 0.2$, $\gamma = 0.1$, $n = 10$. Chuỗi thời gian sinh ra có độ dài
-\textbf{6.000 bước thời gian}, với các thống kê cơ bản như sau:
+Theo Phụ lục thực nghiệm của bài báo gốc, chuỗi Mackey--Glass được sinh từ
+phương trình~\eqref{eq:mackeyglass} với bộ tham số $\tau = 17$, điều kiện đầu $y(0) = 0{,}9$,
+$n = 10$, $\beta = 0{,}2$, $\gamma = 0{,}1$, bước thời gian $dt = 1{,}0$, tạo ra một quỹ đạo dài
+\textbf{10.000 điểm}, chia thành 6.000 điểm huấn luyện, 2.000 điểm kiểm định (validation), và
+2.000 điểm kiểm tra (test) --- tương ứng tỉ lệ 60\%/20\%/20\%.
+
+Trên chuỗi dữ liệu cụ thể dùng trong lần tái hiện này (10.000 điểm, sinh theo đúng bộ tham số
+trên), các thống kê mô tả đo được là:
 
 \begin{itemize}
-	\item \textbf{Giá trị min}: 0,76; \textbf{Max}: 2,47; \textbf{Trung bình}: 1,46; \textbf{Độ lệch chuẩn}: 0,31
-	\item \textbf{Tính chất tự tương quan}: $\text{Corr}(\text{lag}=1) \approx 0,98$;
-	$\text{Corr}(\text{lag}=5) \approx 0,88$; $\text{Corr}(\text{lag}=50) \approx 0,35$
+	\item \textbf{Giá trị nhỏ nhất}: 0,42; \textbf{Lớn nhất}: 1,32; \textbf{Trung bình}: 0,93;
+	\textbf{Độ lệch chuẩn}: 0,23.
+	\item \textbf{Tự tương quan (autocorrelation)}: $\text{Corr}(\text{lag}=1) \approx 0{,}99$;
+	$\text{Corr}(\text{lag}=5) \approx 0{,}76$; $\text{Corr}(\text{lag}=10) \approx 0{,}23$;
+	$\text{Corr}(\text{lag}=50) \approx 0{,}70$.
 \end{itemize}
 
-Những con số này cho thấy:
-\begin{enumerate}
-	\item Mức độ tương quan cực cao ở lag nhỏ ($0,98$ ở lag 1) cho thấy giá trị liên tiếp rất gần
-	nhau, khiến dự báo một bước trước trở nên dễ dàng. Tuy nhiên, mức độ tương quan giảm nhanh
-	khi lag tăng (xuống $0,35$ ở lag 50), phản ánh tính hỗn loạn của chuỗi: bất định tích lũy
-	theo thời gian.
-
-	\item Sự phụ thuộc tạm thời mạnh này chính là lý do tại sao dự báo tầm xa ($H$ lớn) trở nên
-	khó hơn, là điều kiện lý tưởng để kiểm chứng chiến lược FGL: giúp mô hình học cách dự báo
-	từ xa bằng cách sử dụng kiến thức từ một mô hình đã học tốt dự báo gần.
-\end{enumerate}
+Tự tương quan ở lag 1 gần như tuyệt đối ($0{,}99$), phản ánh việc hai điểm liên tiếp trong chuỗi
+gần như không đổi do bước thời gian rời rạc hoá nhỏ ($dt=1$) so với độ trễ $\tau=17$. Tự tương
+quan giảm nhanh và đổi dấu ở các lag trung gian (ví dụ còn $0{,}23$ ở lag 10) trước khi tăng trở
+lại ở lag 50 ($0{,}70$) --- hành vi không đơn điệu này là dấu hiệu đặc trưng của một hệ hỗn loạn
+có cấu trúc chu kỳ-giả (quasi-periodic), chứ không phải nhiễu ngẫu nhiên thuần tuý, và là lý do
+hệ Mackey--Glass được dùng làm benchmark khó cho bài toán dự báo xa (xem mục~\ref{sec:mackeyglass}).
 
 \subsection{Tập dữ liệu CHB-MIT Scalp EEG}
 
-Tập dữ liệu điện não đồ CHB-MIT chứa ghi chép EEG từ \textbf{23 bệnh nhân}, với tổng cộng
-\textbf{664 tệp}. Phân bố dữ liệu theo trạng thái (ictal vs.\ interictal) như sau:
+Cơ sở dữ liệu CHB-MIT gốc chứa ghi chép EEG từ 23 bệnh nhân, tuy nhiên bài báo gốc chỉ thực
+nghiệm trên một tập con gồm \textbf{12 bệnh nhân}: 1, 2, 3, 5, 9, 10, 13, 18, 19, 20, 21, 23
+(Bảng 1 của bài báo gốc); đây cũng là danh sách bệnh nhân được dùng trong mã nguồn tái hiện.
+Với 12 bệnh nhân này, số lượng tệp tín hiệu thuộc mỗi lớp (đếm theo đúng quy tắc lọc tệp mà mã
+nguồn \texttt{load\_signals\_teacher.py} sử dụng: tệp ictal tra theo \texttt{seizure\_summary.csv},
+tệp interictal tra theo nhãn 0 trong \texttt{segmentation.csv}) như sau:
 
 \begin{table}[h]
 	\centering
@@ -126,47 +135,26 @@ Tập dữ liệu điện não đồ CHB-MIT chứa ghi chép EEG từ \textbf{2
 		\toprule
 		\textbf{Loại} & \textbf{Số tệp} & \textbf{Tỷ lệ} \\
 		\midrule
-		Ictal (có cơn)       & 129  & 19,4\% \\
-		Interictal (bình thường) & 535  & 80,6\% \\
+		Ictal (có cơn)            & 62  & 22,6\% \\
+		Interictal (bình thường)  & 212 & 77,4\% \\
 		\midrule
-		\textbf{Tổng}        & 664  & 100\% \\
+		\textbf{Tổng}            & 274 & 100\% \\
 		\bottomrule
 	\end{tabular}
-	\caption{Phân bố ictal/interictal trong tập CHB-MIT. Tỷ lệ ictal trên interictal là 1:4,15.}
+	\caption{Phân bố ictal/interictal trên 12 bệnh nhân CHB-MIT dùng trong bài báo gốc.}
 	\label{tab:chbmit-dist}
 \end{table}
 
-Mất cân bằng lớp (class imbalance) này là đặc tính tự nhiên của vấn đề: cơn động kinh là sự
-kiện hiếm, rất ít so với trạng thái bình thường. Điều này ảnh hưởng trực tiếp đến việc huấn
-luyện mô hình:
+Mất cân bằng lớp (xấp xỉ 1:3,4) là đặc tính tự nhiên của dữ liệu động kinh: số tệp ghi được lúc
+xảy ra cơn luôn ít hơn nhiều so với lúc bệnh nhân ở trạng thái bình thường. Đây cũng là lý do
+bài báo gốc chọn AUC-ROC thay vì accuracy làm độ đo chính (mục~\ref{sec:metrics}), vì accuracy
+dễ gây hiểu nhầm khi hai lớp không cân bằng.
 
-\begin{enumerate}
-	\item \textbf{Mối nguy}: Mô hình có xu hướng dự báo ``không có cơn'' (negative class) cho
-	hầu hết các mẫu để đạt accuracy cao, mặc dù thực tế accuracy này không có giá trị lâm sàng.
-
-	\item \textbf{Giải pháp}: Sử dụng hàm mất mát có trọng số (weighted cross-entropy loss) hoặc
-	kỹ thuật lấy mẫu cân bằng lớp (balanced sampling), để đảm bảo mô hình học được cả hai lớp.
-	Trong báo cáo này, phương pháp sử dụng hàm mất mát CrossEntropyLoss kỹ chinh bằng các
-	trọng số lớp tỉ lệ với độ hiếm của chúng.
-\end{enumerate}
-
-Mỗi tệp EEG sau khi được xử lý qua STFT trở thành một tensor 3 chiều: (\textit{số lượng
-channels}, \textit{bước thời gian}, \textit{số frequency bins}). Ví dụ, một tệp có thể có
-shape $(1, 178, 50)$, tương ứng với 1 channel EEG, 178 frame thời gian, và 50 frequency bins
-trong phạm vi tần số quan tâm (thường là 0--50 Hz cho bài toán EEG).
-
-\subsection{Vai trò bổ sung của hai bài toán trong kiểm chứng FGL}
-
-Mackey--Glass và CHB-MIT không phải hai bộ dữ liệu cùng loại để so sánh trực tiếp đặc tính
-(một là chuỗi tổng hợp cho bài toán hồi quy, một là tín hiệu y tế thực tế cho bài toán phân
-loại); giá trị của việc dùng cả hai nằm ở \textit{tính bổ sung} giữa chúng khi kiểm chứng
-phương pháp FGL. Mackey--Glass cung cấp một môi trường tổng hợp, dễ kiểm soát và tái tạo lại,
-nơi nguồn khó khăn duy nhất là tính hỗn loạn của chuỗi khi tầm dự báo tăng lên; CHB-MIT đưa
-phương pháp vào một bài toán thực tế có giá trị lâm sàng, với các khó khăn đặc trưng của dữ
-liệu thật như mất cân bằng lớp. Nếu FGL chỉ cải thiện hiệu suất trên một trong hai, khó có thể
-khẳng định cải thiện đó là tính chất tổng quát của phương pháp chứ không phải quirk của riêng
-một bộ dữ liệu; việc tái hiện trên cả hai bài toán, như trình bày ở Chương~\ref{chuong:phuongphap},
-nhằm trả lời trực tiếp câu hỏi này.
+Theo quy trình tiền xử lý mà bài báo gốc mô tả, dữ liệu mỗi bệnh nhân được chia thành ba loại:
+interictal, preictal (30 phút trước cơn, trừ 5 phút ngay trước cơn --- khoảng dự báo), và ictal.
+Mỗi mẫu được biến đổi bằng STFT với cửa sổ 30 giây, sau đó cắt theo các kênh EEG chuẩn 10-20.
+Kết quả là một tensor 3 chiều: (\textit{số kênh}, \textit{bước thời gian}, \textit{số dải tần
+số}), được dùng trực tiếp làm đầu vào cho CNN-LSTM (mục~\ref{sec:kientruc}).
 
 \section{Các độ đo đánh giá}
 \label{sec:metrics}
