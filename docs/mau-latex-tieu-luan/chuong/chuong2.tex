@@ -155,31 +155,18 @@ channels}, \textit{bước thời gian}, \textit{số frequency bins}). Ví dụ
 shape $(1, 178, 50)$, tương ứng với 1 channel EEG, 178 frame thời gian, và 50 frequency bins
 trong phạm vi tần số quan tâm (thường là 0--50 Hz cho bài toán EEG).
 
-\subsection{So sánh hai tập dữ liệu}
+\subsection{Vai trò bổ sung của hai bài toán trong kiểm chứng FGL}
 
-\begin{table}[h]
-	\centering
-	\begin{tabular}{lll}
-		\toprule
-		\textbf{Khía cạnh}       & \textbf{Mackey--Glass} & \textbf{CHB-MIT} \\
-		\midrule
-		Nguồn gốc                & Tổng hợp (hệ pt vi phân) & Thực tế (ghi chép lâm sàng) \\
-		Bài toán                 & Dự báo hồi quy (nhiều bước) & Phân loại nhị phân \\
-		Cấu trúc dữ liệu         & 1D (chuỗi thuần) & 3D (channels + spectrogram) \\
-		Thách thức chính          & Tính hỗn loạn (chaotic) & Mất cân bằng lớp \\
-		Tầm áp dụng               & Benchmark tổng quát & Ứng dụng y tế cụ thể \\
-		\bottomrule
-	\end{tabular}
-	\caption{So sánh đặc tính hai tập dữ liệu.}
-	\label{tab:compare-datasets}
-\end{table}
-
-Hai tập dữ liệu này được chọn để kiểm chứng phương pháp FGL ở hai tình huống khác nhau: (\textit{i})
-trên bài toán dự báo tổng quát với dữ liệu tổng hợp, dễ kiểm soát và tái tạo lại; (\textit{ii})
-trên bài toán phân loại y tế thực tế, với dữ liệu không cân bằng và mang giá trị lâm sàng
-cao. Cách tiếp cận này đảm bảo rằng những cải tiến về hiệu suất không phải chỉ là quirk của
-một bộ dữ liệu cụ thể, mà là tính chất tổng quát của phương pháp.
-
+Mackey--Glass và CHB-MIT không phải hai bộ dữ liệu cùng loại để so sánh trực tiếp đặc tính
+(một là chuỗi tổng hợp cho bài toán hồi quy, một là tín hiệu y tế thực tế cho bài toán phân
+loại); giá trị của việc dùng cả hai nằm ở \textit{tính bổ sung} giữa chúng khi kiểm chứng
+phương pháp FGL. Mackey--Glass cung cấp một môi trường tổng hợp, dễ kiểm soát và tái tạo lại,
+nơi nguồn khó khăn duy nhất là tính hỗn loạn của chuỗi khi tầm dự báo tăng lên; CHB-MIT đưa
+phương pháp vào một bài toán thực tế có giá trị lâm sàng, với các khó khăn đặc trưng của dữ
+liệu thật như mất cân bằng lớp. Nếu FGL chỉ cải thiện hiệu suất trên một trong hai, khó có thể
+khẳng định cải thiện đó là tính chất tổng quát của phương pháp chứ không phải quirk của riêng
+một bộ dữ liệu; việc tái hiện trên cả hai bài toán, như trình bày ở Chương~\ref{chuong:phuongphap},
+nhằm trả lời trực tiếp câu hỏi này.
 
 \section{Các độ đo đánh giá}
 \label{sec:metrics}
