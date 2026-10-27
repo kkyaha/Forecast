@@ -9,7 +9,7 @@ Mạng nơ-ron hồi quy (Recurrent Neural Network, RNN) là họ mô hình họ
 chuỗi bằng cách duy trì một trạng thái ẩn (hidden state) được cập nhật tuần tự qua từng bước
 thời gian, cho phép mô hình ``nhớ'' thông tin từ các bước trước \cite{elman1990rnn}. Đây là
 kiến trúc được bài báo gốc dùng cho cả ba mô hình (teacher, baseline, student) trên bài toán
-Mackey--Glass.
+Mackey-Glass.
 
 Với đầu vào $x_t$ tại bước thời gian $t$, RNN cập nhật trạng thái ẩn $h_t$ theo công thức
 \begin{equation}
@@ -29,13 +29,13 @@ hạn, làm mô hình khó học được các quan hệ phụ thuộc xa trong 
 Chưng cất tri thức (Knowledge Distillation, KD), đề xuất bởi Hinton và cộng sự
 \cite{hinton2015distillation}, là kỹ thuật huấn luyện một mô hình (student) để bắt chước đầu
 ra của một mô hình khác (teacher) đã huấn luyện trước, nhằm truyền ``tri thức'' từ teacher
-sang student. Ý tưởng cốt lõi là dùng \textit{soft targets} --- phân phối xác suất đầy đủ trên
-mọi lớp mà teacher dự đoán --- thay vì chỉ dùng nhãn \textit{cứng} (hard label, một-hot) như
+sang student. Ý tưởng cốt lõi là dùng \textit{soft targets} - phân phối xác suất đầy đủ trên
+mọi lớp mà teacher dự đoán - thay vì chỉ dùng nhãn \textit{cứng} (hard label, một-hot) như
 khi huấn luyện thông thường, vì phân phối đầy đủ chứa thêm thông tin về mức độ tương tự giữa
 các lớp (``dark knowledge''). Đây chính là kỹ thuật được bài báo gốc dùng làm cầu nối giữa
 teacher và student.
 
-Để so sánh hai phân phối xác suất rời rạc $p$ và $q$, KD dùng độ phân kỳ Kullback--Leibler:
+Để so sánh hai phân phối xác suất rời rạc $p$ và $q$, KD dùng độ phân kỳ Kullback-Leibler:
 \begin{equation}
 	D_{\mathrm{KL}}(p \,\|\, q) = \sum_{k} p_k \log \frac{p_k}{q_k},
 	\label{eq:kl}
@@ -52,10 +52,10 @@ giữa các lớp có xác suất thấp, chứ không chỉ riêng lớp có x�
 của $T$ và của tham số $\alpha$ trong hàm mất mát của bài báo gốc được trình bày chi tiết ở
 Chương~\ref{chuong:phuongphap}.
 
-\section{Hệ Mackey--Glass}
+\section{Hệ Mackey-Glass}
 \label{sec:mackeyglass}
 
-Hệ Mackey--Glass \cite{mackeyglass1977} là một phương trình vi phân có trễ (delay differential
+Hệ Mackey-Glass \cite{mackeyglass1977} là một phương trình vi phân có trễ (delay differential
 equation), ban đầu được đề xuất để mô phỏng một số quá trình sinh lý có phản hồi trễ, với dạng
 \begin{equation}
 	\frac{dy}{dt} = \beta \frac{y(t-\tau)}{1 + y(t-\tau)^n} - \gamma\, y(t),
@@ -75,12 +75,12 @@ hiện trong báo cáo này.
 Điện não đồ (electroencephalography, EEG) ghi lại hoạt động điện của não qua các điện cực đặt
 trên da đầu (scalp EEG). Tín hiệu EEG trong cơn động kinh (ictal) thường có đặc trưng tần số
 khác biệt rõ rệt so với tín hiệu bình thường (interictal), nên một hướng tiếp cận phổ biến là
-biến đổi tín hiệu từ miền thời gian sang miền tần số trước khi đưa vào mô hình học máy --- đây
+biến đổi tín hiệu từ miền thời gian sang miền tần số trước khi đưa vào mô hình học máy - đây
 là cách bài báo gốc xử lý bộ dữ liệu thứ hai được tái hiện trong báo cáo này.
 
 Biến đổi Fourier thời gian ngắn (Short-Time Fourier Transform, STFT) chia tín hiệu thành các
 cửa sổ ngắn chồng lắp hoặc không chồng lắp, áp dụng biến đổi Fourier rời rạc lên mỗi cửa sổ, từ
-đó tạo ra một \textit{spectrogram} --- biểu diễn năng lượng của tín hiệu theo cả hai chiều
+đó tạo ra một \textit{spectrogram} - biểu diễn năng lượng của tín hiệu theo cả hai chiều
 thời gian và tần số. Spectrogram của nhiều kênh EEG có thể được xem như một ``ảnh'' đa chiều
 (thời gian × tần số × kênh), cho phép áp dụng các kiến trúc học sâu thiết kế cho ảnh hoặc chuỗi
 đa chiều, chẳng hạn kết hợp mạng tích chập (CNN) với mạng hồi quy.
@@ -94,13 +94,13 @@ với các tham số sinh dữ liệu và quy trình tiền xử lý mà bài b�
 trực tiếp từ bài báo; các số liệu thống kê mô tả (min, max, trung bình, tự tương quan, số tệp
 theo lớp) được tính trên chính dữ liệu dùng trong lần tái hiện này.
 
-\subsection{Tập dữ liệu Mackey--Glass}
+\subsection{Tập dữ liệu Mackey-Glass}
 
-Theo Phụ lục thực nghiệm của bài báo gốc, chuỗi Mackey--Glass được sinh từ
+Theo Phụ lục thực nghiệm của bài báo gốc, chuỗi Mackey-Glass được sinh từ
 phương trình~\eqref{eq:mackeyglass} với bộ tham số $\tau = 17$, điều kiện đầu $y(0) = 0{,}9$,
 $n = 10$, $\beta = 0{,}2$, $\gamma = 0{,}1$, bước thời gian $dt = 1{,}0$, tạo ra một quỹ đạo dài
 \textbf{10.000 điểm}, chia thành 6.000 điểm huấn luyện, 2.000 điểm kiểm định (validation), và
-2.000 điểm kiểm tra (test) --- tương ứng tỉ lệ 60\%/20\%/20\%.
+2.000 điểm kiểm tra (test) - tương ứng tỉ lệ 60\%/20\%/20\%.
 
 Trên chuỗi dữ liệu cụ thể dùng trong lần tái hiện này (10.000 điểm, sinh theo đúng bộ tham số
 trên), các thống kê mô tả đo được là:
@@ -116,9 +116,21 @@ trên), các thống kê mô tả đo được là:
 Tự tương quan ở lag 1 gần như tuyệt đối ($0{,}99$), phản ánh việc hai điểm liên tiếp trong chuỗi
 gần như không đổi do bước thời gian rời rạc hoá nhỏ ($dt=1$) so với độ trễ $\tau=17$. Tự tương
 quan giảm nhanh và đổi dấu ở các lag trung gian (ví dụ còn $0{,}23$ ở lag 10) trước khi tăng trở
-lại ở lag 50 ($0{,}70$) --- hành vi không đơn điệu này là dấu hiệu đặc trưng của một hệ hỗn loạn
+lại ở lag 50 ($0{,}70$) - hành vi không đơn điệu này là dấu hiệu đặc trưng của một hệ hỗn loạn
 có cấu trúc chu kỳ-giả (quasi-periodic), chứ không phải nhiễu ngẫu nhiên thuần tuý, và là lý do
-hệ Mackey--Glass được dùng làm benchmark khó cho bài toán dự báo xa (xem mục~\ref{sec:mackeyglass}).
+hệ Mackey-Glass được dùng làm benchmark khó cho bài toán dự báo xa (xem mục~\ref{sec:mackeyglass}).
+
+Khác với CHB-MIT, Mackey-Glass là chuỗi \textbf{đơn biến} (1 đặc trưng vô hướng mỗi bước thời
+gian), nên số chiều đầu vào của mô hình chỉ phụ thuộc vào độ dài cửa sổ nhìn lại
+(\textit{lookback window}). Theo hàm \texttt{create\_time\_series\_dataset} trong
+\texttt{utils/utils.py}, mỗi mẫu huấn luyện $X_i$ được cắt bằng
+\texttt{x[i : i + lookback\_window]}, tức một \textbf{vector 8 chiều} với tham số mẫu
+\texttt{lookback\_window=8} mà bài báo gốc dùng; nhãn $y_i$ là một giá trị vô hướng duy nhất tại
+bước \texttt{i + lookback\_window + horizon - 1}, sau đó được rời rạc hoá thành \texttt{num\_bins}
+lớp (25 hoặc 50 tuỳ cấu hình) để tính KL-divergence. Với chuỗi dài
+10.000 điểm, số mẫu cắt được là $N = 10\,000 - 8 - H + 1$: cụ thể $N=9\,992$ với teacher
+($H=1$) và $N=9\,988$ với student ($H=5$, cấu hình mẫu) - chênh lệch không đáng kể so với tổng
+chiều dài, nên việc cắt cửa sổ gần như không làm giảm cỡ mẫu.
 
 \subsection{Tập dữ liệu CHB-MIT Scalp EEG}
 
@@ -151,10 +163,59 @@ bài báo gốc chọn AUC-ROC thay vì accuracy làm độ đo chính (mục~\r
 dễ gây hiểu nhầm khi hai lớp không cân bằng.
 
 Theo quy trình tiền xử lý mà bài báo gốc mô tả, dữ liệu mỗi bệnh nhân được chia thành ba loại:
-interictal, preictal (30 phút trước cơn, trừ 5 phút ngay trước cơn --- khoảng dự báo), và ictal.
+interictal, preictal (30 phút trước cơn, trừ 5 phút ngay trước cơn - khoảng dự báo), và ictal.
 Mỗi mẫu được biến đổi bằng STFT với cửa sổ 30 giây, sau đó cắt theo các kênh EEG chuẩn 10-20.
-Kết quả là một tensor 3 chiều: (\textit{số kênh}, \textit{bước thời gian}, \textit{số dải tần
-số}), được dùng trực tiếp làm đầu vào cho CNN-LSTM (mục~\ref{sec:kientruc}).
+Kết quả là một tensor \textbf{4 chiều}: (\textit{kênh giả}, \textit{số kênh EEG}, \textit{số
+khung thời gian}, \textit{số dải tần số}), được dùng trực tiếp làm đầu vào cho CNN-LSTM
+(mục~\ref{sec:kientruc}).
+
+Đo trực tiếp trên dữ liệu đã tiền xử lý và lưu cache của bệnh nhân 1 (\texttt{cachedir-teacher}),
+shape thực tế của mỗi mẫu là $(1, 22, 59, 114)$: 1 kênh giả (để tương thích \texttt{Conv3d} với
+\texttt{in\_channels=1}), 22 kênh EEG, 59 khung thời gian sau STFT, và 114 dải tần số còn lại
+sau khi lọc bỏ các dải quanh 0~Hz và hai dải nhiễu điện lưới (\textasciitilde 60~Hz và hài bậc
+hai \textasciitilde 120~Hz) - tổng cộng $22 \times 59 \times 114 = 147\,972$ giá trị đặc trưng
+cho mỗi mẫu, kiểu dữ liệu \texttt{float64}, tương đương $\approx 1{,}13$~MB/mẫu. Đây chính là lý
+do cache STFT nặng tới vài GB mỗi bệnh nhân (vấn đề thứ 9, mục~\ref{sec:chbmit-ketqua}): riêng
+bệnh nhân 1, tệp cache ictal và interictal cộng lại đã hơn 3~GB.
+
+Số chiều EEG của shape $(1, 22, 59, 114)$ ở trên \textbf{không đồng nhất trên toàn bộ CHB-MIT}:
+mã nguồn chọn danh sách kênh khác nhau tuỳ bệnh nhân, do số điện cực thực tế ghi được khác nhau
+giữa các ca lâm sàng gốc. Đối chiếu trực tiếp với \texttt{utils/load\_signals\_teacher.py}:
+
+\begin{table}[H]{Số kênh EEG (chiều thứ hai của tensor) theo bệnh nhân}
+	\label{tab:chbmit-channels}
+	\centering
+	\begin{tabular}{llc}
+		\toprule
+		\textbf{Bệnh nhân} & \textbf{Số kênh EEG} & \textbf{Shape mỗi mẫu} \\
+		\midrule
+		1, 3, 5, 9, 23 (và hầu hết các bệnh nhân khác) & 22 kênh & $(1, 22, 59, 114)$ \\
+		13 & 16 kênh\footnotemark & $(1, 16, 59, 114)$ \\
+		4 & 20 kênh & $(1, 20, 59, 114)$ \\
+		16 & 17 kênh & $(1, 17, 59, 114)$ \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+\footnotetext{Danh sách kênh gốc cho bệnh nhân 13 có 17 kênh (giống bệnh nhân 16), nhưng mã nguồn
+có thêm một bước loại kênh trùng \texttt{T8-P8} riêng cho bệnh nhân 13
+(\texttt{if target == "13" and "T8-P8" in rawEEG.ch\_names: rawEEG.drop\_channels("T8-P8")}),
+nên shape thực tế của bệnh nhân 13 là 16 kênh, không phải 17.}
+
+Trong sáu bệnh nhân dùng cho thực nghiệm (mục~\ref{sec:chbmit-ketqua}), năm bệnh nhân (1, 3, 5,
+9, 23) dùng chung shape $(1, 22, 59, 114)$, riêng bệnh nhân 13 có shape $(1, 16, 59, 114)$ -
+tổng đặc trưng mỗi mẫu chỉ còn $16 \times 59 \times 114 = 107\,616$, ít hơn khoảng $27\%$ so với
+các bệnh nhân còn lại. Đây là một chi tiết dễ bị bỏ qua khi chỉ đọc kiến trúc mô hình
+(\texttt{CNN\_LSTM\_Model} nhận \texttt{X\_train.shape} làm tham số nên tự thích ứng được), nhưng
+cần biết khi so sánh trực tiếp kết quả giữa các bệnh nhân - bệnh nhân 13 học trên không gian
+đặc trưng nhỏ hơn.
+
+Số lượng mẫu thực tế (sau oversampling, bệnh nhân 1) cũng cho một góc nhìn khác về mức mất cân
+bằng so với Bảng~\ref{tab:chbmit-dist} (vốn đếm theo \textit{số tệp thô} trước xử lý): 6 đoạn cơn
+động kinh tạo ra 946 cửa sổ ictal (trong đó chỉ 12 cửa sổ không chồng lấp được dùng khi kiểm tra,
+934 cửa sổ còn lại là bản sao chồng lấp sinh ra để cân bằng lớp khi huấn luyện), so với 2.040 cửa
+sổ interictal từ 17 tệp - tỉ lệ mẫu huấn luyện thực tế xấp xỉ 1:2,2, cân bằng hơn nhiều so với
+tỉ lệ 1:3,4 tính trên số tệp thô ở Bảng~\ref{tab:chbmit-dist}, đúng như kỳ vọng từ cơ chế
+oversampling.
 
 \section{Các độ đo đánh giá}
 \label{sec:metrics}
@@ -163,7 +224,7 @@ Báo cáo này dùng hai độ đo đánh giá tương ứng với hai loại b�
 
 \subsection{Sai số bình phương trung bình MSE}
 
-Với bài toán hồi quy (dự báo giá trị chuỗi Mackey--Glass), sai số bình phương trung bình
+Với bài toán hồi quy (dự báo giá trị chuỗi Mackey-Glass), sai số bình phương trung bình
 (Mean Squared Error, MSE) được dùng để đánh giá:
 \begin{equation}
 	\text{MSE} = \frac{1}{N} \sum_{i=1}^{N} \left(y_i - \hat{y}_i\right)^2,

@@ -4,7 +4,7 @@
 
 Chương này trình bày chi tiết phương pháp FGL: công thức chưng cất tri thức dùng để kết nối
 teacher và student (mục~\ref{sec:fgl-loss-detail}), cách phương pháp hiện thực hóa khái niệm
-``tương lai'' khác nhau trên từng bài toán cụ thể (mục~\ref{sec:cochetuonglai} --- đây là phần
+``tương lai'' khác nhau trên từng bài toán cụ thể (mục~\ref{sec:cochetuonglai} - đây là phần
 phân tích quan trọng nhất của chương), kiến trúc các mô hình được dùng
 (mục~\ref{sec:kientruc}) và quy trình huấn luyện tổng thể (mục~\ref{sec:quytrinh}). Nội dung
 được đối chiếu trực tiếp với mã nguồn công khai của tác giả (kho
@@ -17,7 +17,10 @@ mà bài báo không nêu tường minh.
 Như đã nêu ở Chương~\ref{chuong:baitoan}, hàm mất mát của student là tổ hợp của một hàm mất
 mát chuẩn so với nhãn thật và một hàm mất mát chưng cất so với teacher:
 \begin{equation}
-	\mathcal{L}_{\text{student}} = \alpha \cdot \mathcal{L}_{\text{CE}}\!\left(y^{(S)}, f_S(\mathbf{x})\right) \;+\; (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\!\left(\operatorname{softmax}_T\!\left(f_T(\mathbf{x})\right) \,\middle\|\, \operatorname{softmax}_T\!\left(f_S(\mathbf{x})\right)\right).
+\begin{split}
+	\mathcal{L}_{\text{student}} = &\ \alpha \cdot \mathcal{L}_{\text{CE}}\!\left(y^{(S)}, f_S(\mathbf{x})\right) \\
+	&+ (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\!\left(\operatorname{softmax}_T\!\left(f_T(\mathbf{x})\right) \,\middle\|\, \operatorname{softmax}_T\!\left(f_S(\mathbf{x})\right)\right).
+\end{split}
 	\label{eq:fgl-loss-ch3}
 \end{equation}
 Hệ số $T^2$ nhân vào thành phần KL là một kỹ thuật chuẩn trong chưng cất tri thức
@@ -42,9 +45,9 @@ phần quyết định ``tương lai'' nghĩa là gì nằm ở cách teacher v�
 luyện} với dữ liệu và nhãn khác nhau. Đây là phần linh hoạt nhất của phương pháp, được hiện
 thực hóa theo hai cách khác nhau tùy loại bài toán.
 
-\subsection{Mackey--Glass: lệch cửa sổ thời gian đầu vào}
+\subsection{Mackey-Glass: lệch cửa sổ thời gian đầu vào}
 
-Với bài toán hồi quy trên chuỗi Mackey--Glass, không có khái niệm ``nhãn khác nhau'' giữa hai
+Với bài toán hồi quy trên chuỗi Mackey-Glass, không có khái niệm ``nhãn khác nhau'' giữa hai
 mô hình như bài toán phân loại; thay vào đó, FGL làm lệch \textit{cửa sổ thời gian đầu vào}.
 Cho một chuỗi $\mathbf{y} = (y_1, \dots, y_T)$, với mỗi vị trí $i$, nhãn tại mốc tuyệt đối
 $t = i + L + H - 1$ được lấy ra, trong đó $L$ là độ dài cửa sổ nhìn lại (lookback window) và
@@ -52,7 +55,7 @@ $H$ là tầm dự báo (forecasting horizon). Teacher và student dùng cùng c
 nhưng với hai cặp $(L, H, \text{offset})$ khác nhau, trình bày trong
 Bảng~\ref{bang:mg-offset}.
 
-\begin{table}[H]{Cách lệch cửa sổ giữa teacher và student trên Mackey--Glass}
+\begin{table}[H]{Cách lệch cửa sổ giữa teacher và student trên Mackey-Glass}
 	\label{bang:mg-offset}
 	\centering
 	\begin{tabular}{lccc}
@@ -96,7 +99,7 @@ tương ứng với hai bài toán khác nhau, trình bày trong Bảng~\ref{ban
 		\midrule
 		Tên bài toán & Seizure Detection (phát hiện cơn \textbf{đang} xảy ra) & Seizure Prediction (dự báo cơn \textbf{sẽ} xảy ra) \\
 		Nhãn ictal lấy từ & đoạn tín hiệu \textit{trong lúc} co giật & đoạn tín hiệu \textbf{SOP} = 30 phút, kết thúc cách thời điểm co giật \textbf{SPH} = 5 phút \\
-		Độ khó & Dễ --- thấy trực tiếp biến cố & Khó --- chỉ thấy tín hiệu trước biến cố, chưa có dấu hiệu rõ ràng \\
+		Độ khó & Dễ - thấy trực tiếp biến cố & Khó - chỉ thấy tín hiệu trước biến cố, chưa có dấu hiệu rõ ràng \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -112,9 +115,9 @@ nó học được để nhận ra cơn động kinh (từ bài toán detection)
 
 \subsection{AES: teacher dùng chung theo loài (ngoài phạm vi tái hiện của báo cáo)}
 
-Ngoài Mackey--Glass và CHB-MIT, bài báo gốc còn thực nghiệm trên bộ dữ liệu điện não trong sọ
+Ngoài Mackey-Glass và CHB-MIT, bài báo gốc còn thực nghiệm trên bộ dữ liệu điện não trong sọ
 (intracranial EEG) AES (American Epilepsy Society Seizure Prediction Challenge)
-\cite{brinkmann2016aes}, gồm 5 chó (\texttt{Dog\_1}--\texttt{Dog\_5}) và 2 người
+\cite{brinkmann2016aes}, gồm 5 chó (\texttt{Dog\_1}-\texttt{Dog\_5}) và 2 người
 (\texttt{Patient\_1}, \texttt{Patient\_2}). Mục này chỉ trình bày cơ chế FGL trên bộ dữ liệu
 này ở mức lý thuyết, dựa trên việc đọc mã nguồn và tài liệu của tác giả, để thấy được tính tổng
 quát của phương pháp; báo cáo \textbf{không tái hiện thực nghiệm} trên bộ dữ liệu AES (lý do
@@ -122,8 +125,8 @@ nêu ở Chương~\ref{chuong:dulieu}).
 
 AES cũng là bài toán dự báo cơn động kinh như CHB-MIT, nhưng thiếu nhãn ictal đầy đủ cho từng
 đối tượng riêng lẻ để tự huấn luyện một teacher riêng theo từng bệnh nhân/vật. Tác giả giải
-quyết bằng cách huấn luyện \textit{hai teacher dùng chung} --- một cho nhóm chó và một cho
-nhóm người --- trên dữ liệu ictal/interictal gộp chung của cả nhóm, rồi tái sử dụng cùng một
+quyết bằng cách huấn luyện \textit{hai teacher dùng chung} - một cho nhóm chó và một cho
+nhóm người - trên dữ liệu ictal/interictal gộp chung của cả nhóm, rồi tái sử dụng cùng một
 teacher đó khi chưng cất tri thức cho mọi đối tượng cùng loài. Đây là một cách khác để hiện
 thực hóa ``tương lai'': tri thức mà teacher nắm được không đặc thù theo cá thể, mà là tri thức
 \textit{gộp chung của cả loài} về đặc trưng tần số của cơn động kinh.
@@ -131,9 +134,9 @@ thực hóa ``tương lai'': tri thức mà teacher nắm được không đặc
 \section{Kiến trúc các mô hình}
 \label{sec:kientruc}
 
-\subsection{Mackey--Glass: RNN}
+\subsection{Mackey-Glass: RNN}
 
-Teacher, baseline và student trên Mackey--Glass đều dùng cùng kiến trúc: một mạng RNN 2 lớp
+Teacher, baseline và student trên Mackey-Glass đều dùng cùng kiến trúc: một mạng RNN 2 lớp
 (128 đơn vị ẩn) nối tiếp hai tầng kết nối đầy đủ (fully-connected), với tầng cuối có số đầu ra
 bằng \texttt{num\_bins} (số lớp sau khi rời rạc hóa). Việc dùng cùng một họ kiến trúc cho cả
 ba mô hình giữ cho khác biệt về hiệu năng chỉ phản ánh tác dụng của cơ chế FGL, không bị nhiễu
@@ -146,7 +149,7 @@ Hai bộ dữ liệu điện não dùng chung hai lựa chọn kiến trúc, đ�
 
 \begin{itemize}
 	\item \textbf{CNN\_LSTM\_Model}: ba tầng tích chập 3 chiều (Conv3D, xử lý spectrogram đa
-	kênh như một ``ảnh 3D'' thời gian--tần số--kênh) kèm các tầng gộp (pooling), sau đó làm
+	kênh như một ``ảnh 3D'' thời gian-tần số-kênh) kèm các tầng gộp (pooling), sau đó làm
 	phẳng (flatten) và đưa qua một mạng LSTM 3 lớp (512 đơn vị ẩn), cuối cùng là hai tầng kết
 	nối đầy đủ cho ra 2 đầu ra (ictal/interictal). Đây là kiến trúc mặc định cho cả teacher và
 	student/baseline.
@@ -154,7 +157,7 @@ Hai bộ dữ liệu điện não dùng chung hai lựa chọn kiến trúc, đ�
 	riêng, đưa qua một bộ mã hóa Transformer \textit{riêng cho từng kênh} (không chia sẻ trọng
 	số giữa các kênh), lấy token \texttt{[CLS]} của mỗi kênh rồi nối lại, qua một tầng kết nối
 	đầy đủ để phân loại. Ý tưởng là coi mỗi kênh EEG như một ``modal'' riêng, học đặc trưng
-	không gian--thời gian độc lập trước khi kết hợp (fuse) thông tin giữa các kênh.
+	không gian-thời gian độc lập trước khi kết hợp (fuse) thông tin giữa các kênh.
 \end{itemize}
 
 
@@ -174,15 +177,15 @@ mục~\ref{sec:cochetuonglai}.
 		tieude/.style={font=\small\bfseries},
 		mui/.style={-{Stealth[length=2mm]}, thick}
 	]
-		\node[hop] (s1) {\textbf{Giai đoạn 1 --- Teacher}\\Huấn luyện teacher trên nhiệm vụ dễ (tương lai gần hơn), độc lập, không liên quan đến student};
-		\node[hop, below=of s1] (s2) {\textbf{Giai đoạn 2 --- Baseline}\\Huấn luyện một mô hình trên nhiệm vụ khó của student, không dùng teacher (đối chứng)};
-		\node[hop, below=of s2] (s3) {\textbf{Giai đoạn 3 --- Student (FGL)}\\Huấn luyện student trên nhiệm vụ khó, có teacher (đã đóng băng) dẫn dắt qua hàm mất mát \eqref{eq:fgl-loss-ch3}};
+		\node[hop] (s1) {\textbf{Giai đoạn 1 - Teacher}\\Huấn luyện teacher trên nhiệm vụ dễ (tương lai gần hơn), độc lập, không liên quan đến student};
+		\node[hop, below=of s1] (s2) {\textbf{Giai đoạn 2 - Baseline}\\Huấn luyện một mô hình trên nhiệm vụ khó của student, không dùng teacher (đối chứng)};
+		\node[hop, below=of s2] (s3) {\textbf{Giai đoạn 3 - Student (FGL)}\\Huấn luyện student trên nhiệm vụ khó, có teacher (đã đóng băng) dẫn dắt qua hàm mất mát \eqref{eq:fgl-loss-ch3}};
 		\node[hop, below=of s3] (s4) {\textbf{Đánh giá}\\So sánh Baseline với Student trên cùng tập kiểm tra để đo tác dụng của FGL};
 
-		\draw[mui] (s1) -- (s2);
-		\draw[mui] (s2) -- (s3);
-		\draw[mui] (s3) -- (s4);
-		\draw[mui, dashed] (s1.east) -- ++(0.7cm,0) |- (s3.east);
+		\draw[mui] (s1) - (s2);
+		\draw[mui] (s2) - (s3);
+		\draw[mui] (s3) - (s4);
+		\draw[mui, dashed] (s1.east) - ++(0.7cm,0) |- (s3.east);
 	\end{tikzpicture}
 \end{figure}
 

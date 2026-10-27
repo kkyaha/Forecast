@@ -6,31 +6,33 @@
 
 Phép so sánh cốt lõi của phương pháp là giữa Baseline (không dùng teacher) và Student (có FGL),
 cùng kiến trúc, cùng dữ liệu huấn luyện, khác nhau duy nhất ở việc có hay không có thành phần
-chưng cất tri thức trong hàm mất mát. Trên Mackey--Glass, kết quả ở
+chưng cất tri thức trong hàm mất mát. Trên Mackey-Glass, kết quả ở
 Chương~\ref{chuong:taihien} cho thấy FGL cải thiện \textbf{nhất quán và rõ rệt}: toàn bộ sáu
 seed của kịch bản chuẩn đều cho Student MSE thấp hơn Baseline MSE, mức giảm trung bình
-26,42\% (độ lệch chuẩn 3,86 điểm phần trăm); ở thực nghiệm quét tầm dự báo với Page--Hinkley,
+26,42\% (độ lệch chuẩn 3,86 điểm phần trăm); ở thực nghiệm quét tầm dự báo với Page-Hinkley,
 13 trên 14 giá trị horizon cũng cho cải thiện, trung bình 12,22\% (loại horizon=2). Trên
-CHB-MIT (ba bệnh nhân 1, 3, 5, Bảng~\ref{bang:chbmit-sosanh-benhnhan}), mức tăng trung bình chỉ
-$+31,2\%$ --- thấp hơn 44,8\% bài báo công bố --- và không đồng đều như Mackey--Glass: gần như
-không cải thiện ở bệnh nhân 1 (Baseline đã mạnh), nhưng cải thiện mạnh ở bệnh nhân 3 và 5
-(Baseline yếu). Phân tích thêm ở mục~\ref{sec:nhanxet-phephan}.
+CHB-MIT (ba bệnh nhân 1, 3, 5 có đủ dữ liệu so sánh), mức tăng trung bình đo được ở hai lần
+chạy độc lập là $+31,2\%$ và $+65,2\%$ (Bảng~\ref{bang:chbmit-sosanh-benhnhan} và
+Bảng~\ref{bang:chbmit-sosanh-benhnhan-l2}) - cả hai thấp hơn 44,8\% bài báo công bố, và không
+đồng đều như Mackey-Glass: cải thiện yếu nhất ở bệnh nhân 1 (Baseline đã mạnh ở lần 1), cải
+thiện mạnh hơn ở bệnh nhân 3 và 5 (Baseline yếu) - nhất quán ở cả hai lần chạy dù độ lớn khác
+nhau. Phân tích thêm ở mục~\ref{sec:nhanxet-phephan}.
 
 \section{So sánh với các hướng tiếp cận liên quan}
 
 FGL giải quyết vấn đề thay đổi theo thời gian của dữ liệu một cách \textit{ngầm định}: không
 có bước phát hiện tường minh thời điểm phân phối dữ liệu thay đổi, mà dựa hoàn toàn vào việc
-teacher --- huấn luyện trên dữ liệu gần đích hơn --- truyền tri thức cho student qua chưng cất.
+teacher - huấn luyện trên dữ liệu gần đích hơn - truyền tri thức cho student qua chưng cất.
 Cách tiếp cận này khác với các phương pháp phát hiện trôi khái niệm (concept drift) tường
-minh, chẳng hạn kiểm định Page--Hinkley \cite{page1954cusum} mà chính tác giả cũng thử nghiệm
+minh, chẳng hạn kiểm định Page-Hinkley \cite{page1954cusum} mà chính tác giả cũng thử nghiệm
 kết hợp thêm trong \texttt{drift\_exp.py}: ở đó, hệ thống chủ động theo dõi độ lệch giữa giá
 trị quan sát và trung bình trượt của nó, và khi độ lệch tích lũy vượt ngưỡng thì trigger huấn
-luyện lại student ngay trong lúc suy luận. Hai cơ chế này không loại trừ nhau --- kết quả ở
-Bảng~\ref{bang:mg-drift} cho thấy có thể kết hợp cả hai (FGL \textit{và} Page--Hinkley) --- và
+luyện lại student ngay trong lúc suy luận. Hai cơ chế này không loại trừ nhau - kết quả ở
+Bảng~\ref{bang:mg-drift} cho thấy có thể kết hợp cả hai (FGL \textit{và} Page-Hinkley) - và
 việc kết hợp này do chính tác giả thực hiện, không phải đóng góp riêng của báo cáo. Điểm cần
 lưu ý là thực nghiệm kết hợp này dùng $\alpha=0$ (student học hoàn toàn từ teacher, không dùng
 nhãn thật), nên đo một khía cạnh khác với thực nghiệm chuẩn ($\alpha=0,5$,
-mục~\ref{sec:mg-sweep-seed}) --- hai con số 26,42\% và 12,22\% không nên gộp chung so sánh như
+mục~\ref{sec:mg-sweep-seed}) - hai con số 26,42\% và 12,22\% không nên gộp chung so sánh như
 cùng một cấu hình.
 
 So với các phương pháp chưng cất tri thức cổ điển \cite{hinton2015distillation}, nơi teacher
@@ -50,7 +52,7 @@ hoặc còn cần thêm bằng chứng để khẳng định chắc chắn:
 	\item \textbf{Ngoại lệ ở tầm dự báo ngắn}: trong Bảng~\ref{bang:mg-drift}, horizon=2 là
 	trường hợp duy nhất FGL làm \textit{tệ hơn} baseline ($-7,20\%$). Điều này cho thấy lợi ích
 	của FGL không phải tuyệt đối ở mọi cấu hình, mà có thể phụ thuộc vào việc bài toán của
-	student đã đủ ``khó'' để teacher có giá trị dẫn dắt hay chưa --- với tầm dự báo rất ngắn,
+	student đã đủ ``khó'' để teacher có giá trị dẫn dắt hay chưa - với tầm dự báo rất ngắn,
 	bài toán của student đã gần với bài toán của teacher, nên lợi ích chưng cất giảm hoặc mất
 	tác dụng.
 	\item \textbf{Mức cải thiện tái hiện cao hơn mức công bố}: trung bình 26,42\% (sáu seed) so
@@ -58,22 +60,30 @@ hoặc còn cần thêm bằng chứng để khẳng định chắc chắn:
 	khẳng định nguyên nhân chính xác của sự khác biệt này (khác biệt về cách loại outlier, hay
 	về số lượng cấu hình được lấy trung bình trong bài báo), nên chỉ nêu đây là một quan sát
 	cần làm rõ thêm, không khẳng định tái hiện vượt trội hơn bài báo.
-	\item \textbf{Độ tin cậy thống kê còn hạn chế}: mỗi seed chỉ được chạy một lần, nên chưa
-	tách hoàn toàn được phương sai do khởi tạo trọng số ngẫu nhiên khỏi phương sai do seed chia
-	dữ liệu. Kết quả nên được hiểu là ``khớp hướng và độ lớn'' với bài báo, chưa phải một
-	khẳng định thống kê chặt (ví dụ kiểm định giả thuyết với nhiều lần lặp cho mỗi seed).
+	\item \textbf{Độ tin cậy thống kê còn hạn chế}: mỗi seed Mackey-Glass chỉ được chạy một
+	lần, nên chưa tách hoàn toàn được phương sai do khởi tạo trọng số ngẫu nhiên khỏi phương sai
+	do seed chia dữ liệu. Thực nghiệm CHB-MIT củng cố thêm quan sát này bằng bằng chứng cụ thể:
+	hai lần chạy độc lập trên cùng ba bệnh nhân (1, 3, 5), cùng mã nguồn và siêu tham số, cho
+	mức tăng trung bình của FGL lần lượt $+31,2\%$ và $+65,2\%$
+	(mục~\ref{sec:chbmit-hailanchay}) - chênh lệch hơn gấp đôi chỉ do khác seed ngẫu nhiên.
+	Kết quả trên cả hai bộ dữ liệu nên được hiểu là ``khớp hướng'' với bài báo, chưa phải một
+	khẳng định thống kê chặt về \textit{độ lớn} (cần kiểm định giả thuyết với nhiều lần lặp cho
+	mỗi seed/bệnh nhân).
 	\item \textbf{Mức tăng AUC-ROC trên CHB-MIT thấp hơn công bố và không đồng đều giữa bệnh
-	nhân}: bài báo báo cáo mức tăng trung bình 44,8\%, tái hiện trên ba bệnh nhân chỉ được
-	$+31,2\%$ (Bảng~\ref{bang:chbmit-sosanh-benhnhan}), nguyên nhân chính là Baseline hoạt động
-	rất khác nhau giữa bệnh nhân (AUC từ 0,20 đến 0,92) --- nơi Baseline đã mạnh (bệnh nhân 1)
-	thì FGL gần như không còn gì để cải thiện. Một phần khác biệt cũng có thể do mã nguồn
-	CHB-MIT không cố định seed ngẫu nhiên và báo cáo mới tái hiện được ba bệnh nhân với vài
-	trial mỗi bệnh nhân, trong khi bài báo có thể đã lấy trung bình trên nhiều bệnh nhân và lần
-	chạy hơn. Đây là điểm tái hiện \textbf{không ủng hộ rõ} tuyên bố của bài báo trên bộ dữ liệu
-	này, cần nêu rõ thay vì bỏ qua.
+	nhân}: bài báo báo cáo mức tăng trung bình 44,8\%, hai lần chạy tái hiện trên ba bệnh nhân
+	chỉ được $+31,2\%$ và $+65,2\%$ (Bảng~\ref{bang:chbmit-sosanh-benhnhan} và
+	Bảng~\ref{bang:chbmit-sosanh-benhnhan-l2}) - cả hai thấp hơn công bố. Nguyên nhân chính
+	nhất quán ở cả hai lần chạy là Baseline hoạt động rất khác nhau giữa bệnh nhân (AUC từ gần
+	0 đến hơn 0,9) - nơi Baseline đã mạnh thì FGL gần như không còn gì để cải thiện, nơi
+	Baseline yếu hoặc suy biến thì FGL cải thiện mạnh về số tương đối nhưng giá trị tuyệt đối có
+	thể vẫn chưa cao. Phần khác biệt còn lại đến từ việc mã nguồn CHB-MIT không cố định seed
+	ngẫu nhiên và báo cáo mới tái hiện được ba bệnh nhân có đủ dữ liệu so sánh (thêm ba bệnh
+	nhân 9, 13, 23 đang mở rộng dở dang, mục~\ref{sec:chbmit-ketqua}), trong khi bài báo có thể
+	đã lấy trung bình trên nhiều bệnh nhân và lần chạy hơn. Đây là điểm tái hiện \textbf{không
+	ủng hộ rõ} tuyên bố của bài báo trên bộ dữ liệu này, cần nêu rõ thay vì bỏ qua.
 	\item \textbf{Chỉ số AUC bất thường ở lần chạy local đã được làm rõ thêm}: AUC-ROC = 0,28 của
 	teacher (bệnh nhân 1) trên máy cá nhân không lặp lại ở bất kỳ lần chạy nào trên Kaggle
-	(mục~\ref{sec:chbmit-ketqua}) --- nhiều khả năng là một lần khởi tạo ngẫu nhiên không may,
+	(mục~\ref{sec:chbmit-ketqua}) - nhiều khả năng là một lần khởi tạo ngẫu nhiên không may,
 	hơn là lỗi hệ thống. Nghi vấn \texttt{shuffle=False} (mục~\ref{item:shuffle-false}) vẫn là
 	một quan sát hợp lệ về thiết kế mã nguồn, nhưng không còn đủ cơ sở khẳng định là nguyên
 	nhân chính của riêng kết quả 0,28 đó.

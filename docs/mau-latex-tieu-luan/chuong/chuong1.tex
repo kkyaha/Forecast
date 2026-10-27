@@ -5,8 +5,8 @@
 \section{Đánh đổi giữa tính hữu dụng và độ chính xác trong dự báo sự kiện}
 
 Dự báo sự kiện theo chuỗi thời gian (time-series event forecasting) là bài toán xác định
-liệu một biến cố quan tâm --- chẳng hạn một cơn động kinh, một lần hỏng hóc thiết bị, hay một
-thay đổi mạnh trong động lực của một hệ --- có xảy ra trong một khoảng thời gian tới hay
+liệu một biến cố quan tâm - chẳng hạn một cơn động kinh, một lần hỏng hóc thiết bị, hay một
+thay đổi mạnh trong động lực của một hệ - có xảy ra trong một khoảng thời gian tới hay
 không, dựa trên các quan sát đã có. Bài toán này, cùng với bài toán dự báo hồi quy giá trị
 tương lai của chuỗi, có một đặc điểm chung gây khó khăn cho việc thiết kế mô hình: mối quan hệ
 ngược giữa thời điểm dự báo và chất lượng dự báo.
@@ -36,16 +36,16 @@ Future-Guided Learning (FGL), phương pháp đề xuất trong bài báo của 
 
 \begin{itemize}
 	\item \textbf{Teacher}: được huấn luyện trên một phiên bản \textit{dễ hơn} của bài toán,
-	sử dụng dữ liệu ở \textit{tương lai gần hơn} so với student --- gần hoặc ngay tại thời
+	sử dụng dữ liệu ở \textit{tương lai gần hơn} so với student - gần hoặc ngay tại thời
 	điểm sự kiện xảy ra (với bài toán phân loại sự kiện), hoặc chỉ cần ngoại suy một bước thay
 	vì nhiều bước (với bài toán hồi quy). Vì nhiệm vụ dễ, teacher học nhanh và đạt độ chính xác
 	cao.
-	\item \textbf{Student}: giải quyết nhiệm vụ \textit{khó} thực sự cần dùng trong thực tế ---
-	dự báo sớm, hoặc dự báo xa --- chỉ dùng dữ liệu ở \textit{quá khứ tương đối} so với teacher.
+	\item \textbf{Student}: giải quyết nhiệm vụ \textit{khó} thực sự cần dùng trong thực tế -
+	dự báo sớm, hoặc dự báo xa - chỉ dùng dữ liệu ở \textit{quá khứ tương đối} so với teacher.
 	\item \textbf{Cầu nối}: trong lúc huấn luyện student, cùng một batch dữ liệu đầu vào được
 	đưa qua cả teacher và student, rồi phân phối xác suất đầu ra của student được ép
 	\textit{bắt chước} phân phối của teacher thông qua chưng cất tri thức (knowledge
-	distillation), đo bằng độ phân kỳ Kullback--Leibler (KL).
+	distillation), đo bằng độ phân kỳ Kullback-Leibler (KL).
 \end{itemize}
 
 Tác giả cho biết ý tưởng này lấy cảm hứng từ lý thuyết \textit{predictive coding} trong khoa
@@ -68,15 +68,18 @@ dùng để suy luận, teacher không còn tham gia.
 Xét một mô hình teacher $f_T$ và một mô hình student $f_S$, cùng xử lý chuỗi quan sát đầu vào
 $\mathbf{x}$, nhưng được huấn luyện trên hai phiên bản nhãn khác nhau của cùng một đích dự
 báo: $y^{(T)}$ (nhãn của nhiệm vụ dễ, teacher) và $y^{(S)}$ (nhãn của nhiệm vụ khó, student),
-với $y^{(T)}$ và $y^{(S)}$ cùng nhằm tới một mốc đích --- hoặc cùng một thời điểm tuyệt đối
-trong bài toán hồi quy, hoặc cùng một sự kiện trong bài toán phân loại --- nhưng khác nhau về
+với $y^{(T)}$ và $y^{(S)}$ cùng nhằm tới một mốc đích - hoặc cùng một thời điểm tuyệt đối
+trong bài toán hồi quy, hoặc cùng một sự kiện trong bài toán phân loại - nhưng khác nhau về
 lượng thông tin ``tương lai'' mà đầu vào tương ứng của mỗi mô hình chứa.
 
 Teacher được huấn luyện độc lập trước, tối thiểu hóa một hàm mất mát chuẩn (ví dụ sai số bình
 phương trung bình với hồi quy, hoặc entropy chéo với phân loại) trên nhiệm vụ của nó. Sau khi
 teacher đã huấn luyện xong, student được huấn luyện với hàm mất mát tổng hợp
 \begin{equation}
-	\mathcal{L}_{\text{student}} = \alpha \cdot \mathcal{L}_{\text{CE}}\!\left(y^{(S)}, f_S(\mathbf{x})\right) \;+\; (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\!\left(\operatorname{softmax}\!\left(\frac{f_T(\mathbf{x})}{T}\right) \,\middle\|\, \operatorname{softmax}\!\left(\frac{f_S(\mathbf{x})}{T}\right)\right),
+\begin{split}
+	\mathcal{L}_{\text{student}} = &\ \alpha \cdot \mathcal{L}_{\text{CE}}\!\left(y^{(S)}, f_S(\mathbf{x})\right) \\
+	&+ (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\!\left(\operatorname{softmax}\!\left(\frac{f_T(\mathbf{x})}{T}\right) \,\middle\|\, \operatorname{softmax}\!\left(\frac{f_S(\mathbf{x})}{T}\right)\right),
+\end{split}
 	\label{eq:fgl-loss}
 \end{equation}
 trong đó $f_T(\mathbf{x})$ và $f_S(\mathbf{x})$ là logits (đầu ra trước softmax) của teacher
@@ -88,15 +91,15 @@ Chương~\ref{chuong:phuongphap}.
 Cần nhấn mạnh rằng công thức \eqref{eq:fgl-loss} chỉ xác định được \textit{dạng toán học} của
 cơ chế chưng cất; việc teacher và student \textit{cụ thể} nhìn vào phần dữ liệu nào, và nhãn
 $y^{(T)}$, $y^{(S)}$ được định nghĩa ra sao, mới là phần quyết định ``tương lai'' nghĩa là gì
-trong từng bài toán --- đây là điểm khác biệt chính giữa hai ứng dụng được tái hiện trong báo
+trong từng bài toán - đây là điểm khác biệt chính giữa hai ứng dụng được tái hiện trong báo
 cáo này (Chương~\ref{chuong:phuongphap}, mục~\ref{sec:cochetuonglai}).
 
 \section{Khó khăn và thách thức}
 
 Việc hiện thực hóa ý tưởng FGL gặp một số khó khăn chính sau.
 
-Thứ nhất là việc áp dụng chưng cất tri thức --- vốn được định nghĩa trên phân phối xác suất
-rời rạc của bài toán phân loại \cite{hinton2015distillation} --- cho bài toán \textit{hồi quy}
+Thứ nhất là việc áp dụng chưng cất tri thức - vốn được định nghĩa trên phân phối xác suất
+rời rạc của bài toán phân loại \cite{hinton2015distillation} - cho bài toán \textit{hồi quy}
 (dự báo giá trị liên tục của chuỗi thời gian). Cần một cách chuyển bài toán hồi quy thành bài
 toán phân loại để có thể tính KL divergence giữa teacher và student.
 
@@ -126,7 +129,7 @@ Từ các phân tích trên, đóng góp chính của bài báo gốc có thể 
 	dụng được chưng cất tri thức dựa trên KL divergence, vốn chỉ định nghĩa tự nhiên trên bài
 	toán phân loại.
 	\item Thực nghiệm trên ba bộ dữ liệu thuộc hai lĩnh vực khác nhau: chuỗi hỗn loạn tổng hợp
-	Mackey--Glass (dự báo hồi quy), và hai bộ dữ liệu điện não đồ CHB-MIT và AES (dự báo cơn
-	động kinh), báo cáo mức giảm 23,4\% sai số MSE trên Mackey--Glass và mức tăng 44,8\% AUC-ROC
+	Mackey-Glass (dự báo hồi quy), và hai bộ dữ liệu điện não đồ CHB-MIT và AES (dự báo cơn
+	động kinh), báo cáo mức giảm 23,4\% sai số MSE trên Mackey-Glass và mức tăng 44,8\% AUC-ROC
 	trung bình trên CHB-MIT so với mô hình không dùng FGL.
 \end{itemize}

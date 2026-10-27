@@ -1,0 +1,113 @@
+% CHƯƠNG 2 - Kiến thức nền tảng cần để hiểu phương pháp
+\chapter{Kiến thức nền tảng}
+\label{chuong:nentang}
+
+\section{Mạng nơ-ron hồi quy}
+\label{sec:rnn}
+
+Mạng nơ-ron hồi quy (Recurrent Neural Network, RNN) là họ mô hình học sâu xử lý dữ liệu dạng
+chuỗi bằng cách duy trì một trạng thái ẩn (hidden state) được cập nhật tuần tự qua từng bước
+thời gian, cho phép mô hình ``nhớ'' thông tin từ các bước trước \cite{elman1990rnn}. Đây là
+kiến trúc được bài báo gốc dùng cho cả ba mô hình (teacher, baseline, student) trên bài toán
+Mackey--Glass.
+
+Với đầu vào $x_t$ tại bước thời gian $t$, RNN cập nhật trạng thái ẩn $h_t$ theo công thức
+\begin{equation}
+	h_t = \tanh\!\left(W_{xh} x_t + W_{hh} h_{t-1} + b_h\right),
+	\label{eq:rnn}
+\end{equation}
+trong đó $W_{xh}$, $W_{hh}$ là các ma trận trọng số và $b_h$ là độ lệch (bias); $h_t$ vừa là
+trạng thái được truyền sang bước thời gian tiếp theo, vừa được dùng để tính đầu ra tại bước
+$t$. Nhược điểm được biết đến của RNN là hiện tượng \textit{tiêu biến/bùng nổ gradient}
+(vanishing/exploding gradient): khi lan truyền ngược qua nhiều bước thời gian, gradient phải đi
+qua tích của nhiều ma trận $W_{hh}$ liên tiếp, khiến gradient dễ tiến về không hoặc tăng vô
+hạn, làm mô hình khó học được các quan hệ phụ thuộc xa trong chuỗi.
+
+\section{Chưng cất tri thức}
+\label{sec:kd}
+
+Chưng cất tri thức (Knowledge Distillation, KD), đề xuất bởi Hinton và cộng sự
+\cite{hinton2015distillation}, là kỹ thuật huấn luyện một mô hình (student) để bắt chước đầu
+ra của một mô hình khác (teacher) đã huấn luyện trước, nhằm truyền ``tri thức'' từ teacher
+sang student. Ý tưởng cốt lõi là dùng \textit{soft targets} --- phân phối xác suất đầy đủ trên
+mọi lớp mà teacher dự đoán --- thay vì chỉ dùng nhãn \textit{cứng} (hard label, một-hot) như
+khi huấn luyện thông thường, vì phân phối đầy đủ chứa thêm thông tin về mức độ tương tự giữa
+các lớp (``dark knowledge''). Đây chính là kỹ thuật được bài báo gốc dùng làm cầu nối giữa
+teacher và student.
+
+Để so sánh hai phân phối xác suất rời rạc $p$ và $q$, KD dùng độ phân kỳ Kullback--Leibler:
+\begin{equation}
+	D_{\mathrm{KL}}(p \,\|\, q) = \sum_{k} p_k \log \frac{p_k}{q_k},
+	\label{eq:kl}
+\end{equation}
+đo lượng thông tin bị mất khi dùng $q$ để xấp xỉ $p$; $D_{\mathrm{KL}}(p\|q) \geq 0$, bằng 0
+khi và chỉ khi $p = q$. Trước khi tính KL, logits của cả teacher và student thường được làm
+``mềm'' bằng một tham số nhiệt độ (temperature) $T > 0$ qua hàm softmax có nhiệt độ:
+\begin{equation}
+	\operatorname{softmax}_T(z)_k = \frac{\exp(z_k / T)}{\sum_j \exp(z_j / T)}.
+	\label{eq:softmax-t}
+\end{equation}
+Khi $T$ lớn, phân phối xác suất trở nên dàn đều hơn, giúp student học được quan hệ tương đối
+giữa các lớp có xác suất thấp, chứ không chỉ riêng lớp có xác suất cao nhất. Vai trò cụ thể
+của $T$ và của tham số $\alpha$ trong hàm mất mát của bài báo gốc được trình bày chi tiết ở
+Chương~\ref{chuong:phuongphap}.
+
+\section{Hệ Mackey--Glass}
+\label{sec:mackeyglass}
+
+Hệ Mackey--Glass \cite{mackeyglass1977} là một phương trình vi phân có trễ (delay differential
+equation), ban đầu được đề xuất để mô phỏng một số quá trình sinh lý có phản hồi trễ, với dạng
+\begin{equation}
+	\frac{dy}{dt} = \beta \frac{y(t-\tau)}{1 + y(t-\tau)^n} - \gamma\, y(t),
+	\label{eq:mackeyglass}
+\end{equation}
+trong đó $\tau$ là độ trễ (thường dùng $\tau = 17$), còn $\beta$, $\gamma$, $n$ là các tham số
+điều khiển hình dạng của phương trình. Với các giá trị tham số phù hợp, nghiệm của phương
+trình \eqref{eq:mackeyglass} có tính \textit{hỗn loạn} (chaotic): quỹ đạo không lặp lại theo
+chu kỳ cố định và rất nhạy cảm với điều kiện ban đầu, khiến chuỗi do hệ này sinh ra trở thành
+một benchmark chuẩn và khó cho các bài toán dự báo chuỗi thời gian phi tuyến, đặc biệt khi tầm
+dự báo (forecast horizon) tăng lên. Đây là bộ dữ liệu đầu tiên trong hai bộ dữ liệu được tái
+hiện trong báo cáo này.
+
+\section{Tín hiệu điện não đồ và biến đổi STFT}
+\label{sec:eeg}
+
+Điện não đồ (electroencephalography, EEG) ghi lại hoạt động điện của não qua các điện cực đặt
+trên da đầu (scalp EEG). Tín hiệu EEG trong cơn động kinh (ictal) thường có đặc trưng tần số
+khác biệt rõ rệt so với tín hiệu bình thường (interictal), nên một hướng tiếp cận phổ biến là
+biến đổi tín hiệu từ miền thời gian sang miền tần số trước khi đưa vào mô hình học máy --- đây
+là cách bài báo gốc xử lý bộ dữ liệu thứ hai được tái hiện trong báo cáo này.
+
+Biến đổi Fourier thời gian ngắn (Short-Time Fourier Transform, STFT) chia tín hiệu thành các
+cửa sổ ngắn chồng lắp hoặc không chồng lắp, áp dụng biến đổi Fourier rời rạc lên mỗi cửa sổ, từ
+đó tạo ra một \textit{spectrogram} --- biểu diễn năng lượng của tín hiệu theo cả hai chiều
+thời gian và tần số. Spectrogram của nhiều kênh EEG có thể được xem như một ``ảnh'' đa chiều
+(thời gian × tần số × kênh), cho phép áp dụng các kiến trúc học sâu thiết kế cho ảnh hoặc chuỗi
+đa chiều, chẳng hạn kết hợp mạng tích chập (CNN) với mạng hồi quy.
+
+\section{Các độ đo đánh giá}
+\label{sec:metrics}
+
+Báo cáo này dùng hai độ đo đánh giá tương ứng với hai loại bài toán.
+
+\subsection{Sai số bình phương trung bình MSE}
+
+Với bài toán hồi quy (dự báo giá trị chuỗi Mackey--Glass), sai số bình phương trung bình
+(Mean Squared Error, MSE) được dùng để đánh giá:
+\begin{equation}
+	\text{MSE} = \frac{1}{N} \sum_{i=1}^{N} \left(y_i - \hat{y}_i\right)^2,
+	\label{eq:mse}
+\end{equation}
+trong đó $y_i$ là giá trị thực tế, $\hat{y}_i$ là giá trị dự báo, và $N$ là số mẫu đánh giá.
+MSE càng nhỏ, dự báo càng chính xác.
+
+\subsection{Diện tích dưới đường cong ROC}
+
+Với bài toán phân loại sự kiện (phát hiện/dự báo cơn động kinh), độ đo chính là diện tích dưới
+đường cong ROC (Area Under the ROC Curve, AUC-ROC). Đường cong ROC biểu diễn tỉ lệ dương thật
+(true positive rate) theo tỉ lệ dương giả (false positive rate) khi thay đổi ngưỡng phân loại;
+AUC là diện tích dưới đường cong này, nhận giá trị trong $[0,1]$ \cite{fawcett2006roc}. AUC
+bằng 0,5 tương ứng với một bộ phân loại ngẫu nhiên (không có khả năng phân biệt lớp); AUC càng
+gần 1, mô hình phân biệt hai lớp (ictal/interictal) càng tốt. Độ đo này được chọn (thay vì độ
+chính xác, accuracy) một phần vì dữ liệu ictal và interictal mất cân bằng nghiêm trọng về số
+lượng, khiến accuracy dễ gây hiểu nhầm.

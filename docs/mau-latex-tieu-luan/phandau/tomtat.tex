@@ -3,13 +3,13 @@
 \begin{preamble}{Tóm tắt}
 \textbf{Tóm tắt:} Dự báo sự kiện theo chuỗi thời gian có một đánh đổi cố hữu: dự báo càng
 sớm thì càng hữu dụng nhưng càng khó và kém chính xác, còn dự báo muộn thì dễ và chính xác
-nhưng không còn giá trị ứng dụng. Future-Guided Learning (FGL) --- phương pháp được đề xuất
-trong bài báo gốc (Gunasekaran và cộng sự, 2025, \textit{Nature Communications}) --- giải
+nhưng không còn giá trị ứng dụng. Future-Guided Learning (FGL) - phương pháp được đề xuất
+trong bài báo gốc (Gunasekaran và cộng sự, 2025, \textit{Nature Communications}) - giải
 quyết đánh đổi này bằng cách tách thành hai mô hình: một \textit{teacher} được huấn luyện
 trên nhiệm vụ dễ hơn ở tương lai gần, và một \textit{student} học nhiệm vụ khó ở quá khứ
 tương đối, được dẫn dắt bởi teacher qua chưng cất tri thức (knowledge distillation) dùng độ
-phân kỳ Kullback--Leibler. Báo cáo này tái hiện và phân tích FGL trên hai bài toán: dự báo
-hồi quy trên chuỗi hỗn loạn Mackey--Glass, và dự báo cơn động kinh từ điện não đồ CHB-MIT.
+phân kỳ Kullback-Leibler. Báo cáo này tái hiện và phân tích FGL trên hai bài toán: dự báo
+hồi quy trên chuỗi hỗn loạn Mackey-Glass, và dự báo cơn động kinh từ điện não đồ CHB-MIT.
 Với Mackey-Glass, quá trình tái hiện phát hiện và sửa tám lỗi trong mã nguồn công khai của
 tác giả (trong đó có bốn tệp còn nguyên dấu xung đột merge khiến mã không chạy được, một lỗi
 làm lệch tầm dự báo một bước, và một khối tham số dòng lệnh bị vô hiệu do nằm trong chuỗi
@@ -18,11 +18,11 @@ trung bình (MSE) trung bình 26,42\% so với mô hình đối chứng không d
 và độ lớn với mức 23,4\% công bố trong bài báo, ổn định trên toàn bộ sáu seed. Với CHB-MIT,
 báo cáo trình bày chi tiết cơ chế FGL hiện thực hóa ``tương lai'' bằng cách định nghĩa nhãn
 khác nhau cho teacher (phát hiện cơn đang xảy ra) và student (dự báo cơn sẽ xảy ra). Thực
-nghiệm tái hiện đầy đủ ba giai đoạn trên ba bệnh nhân (1, 3, 5; chạy trên Kaggle do máy cá nhân
-hết bộ nhớ) cho thấy mức tăng AUC-ROC (Baseline → Student) trung bình $+31,2\%$, thấp hơn nhiều
+nghiệm tái hiện đầy đủ ba giai đoạn trên ba bệnh nhân (1, 3, 5; chạy trên Kaggle) cho thấy
+mức tăng AUC-ROC (Baseline → Student) trung bình $+31,2\%$, thấp hơn nhiều
 so với mức tăng 44,8\% bài báo công bố, chủ yếu do Baseline hoạt động rất khác nhau giữa các
 bệnh nhân. Kết quả chung cho thấy FGL tái hiện được về hướng và độ lớn cải thiện trên dữ liệu
-tổng hợp Mackey--Glass, nhưng chưa tái hiện được rõ mức cải thiện công bố trên dữ liệu thực
+tổng hợp Mackey-Glass, nhưng chưa tái hiện được rõ mức cải thiện công bố trên dữ liệu thực
 CHB-MIT.
 
 \textit{\textbf{Từ khóa:} Future-Guided Learning, chưng cất tri thức, dự báo chuỗi thời gian, dự báo cơn động kinh}
