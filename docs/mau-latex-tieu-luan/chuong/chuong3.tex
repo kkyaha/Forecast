@@ -19,14 +19,15 @@ mát chuẩn so với nhãn thật và một hàm mất mát chưng cất so v�
 \begin{equation}
 \begin{split}
 	\mathcal{L}_{\text{student}} = &\ \alpha \cdot \mathcal{L}_{\text{CE}}\!\left(y^{(S)}, f_S(\mathbf{x})\right) \\
-	&+ (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\!\left(\operatorname{softmax}_T\!\left(f_T(\mathbf{x})\right) \,\middle\|\, \operatorname{softmax}_T\!\left(f_S(\mathbf{x})\right)\right).
+	&+ (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\Bigl(\operatorname{softmax}_T\!\left(f_T(\mathbf{x})\right) \\
+	&\hspace{3.6cm} \big\|\; \operatorname{softmax}_T\!\left(f_S(\mathbf{x})\right)\Bigr).
 \end{split}
 	\label{eq:fgl-loss-ch3}
 \end{equation}
 Hệ số $T^2$ nhân vào thành phần KL là một kỹ thuật chuẩn trong chưng cất tri thức
 \cite{hinton2015distillation}: khi $T$ tăng, độ lớn gradient của softmax có nhiệt độ giảm theo
 tỉ lệ $1/T^2$, nên nhân lại $T^2$ giúp giữ thang gradient ổn định khi thay đổi $T$, không phải
-một đóng góp riêng của bài báo này. Tham số $\alpha \in [0,1]$ quyết định mức độ tin vào nhãn
+một đóng góp riêng của bài báo này. Tham số $\alpha \in [0.1]$ quyết định mức độ tin vào nhãn
 thật so với tin vào teacher: $\alpha = 1$ loại bỏ hoàn toàn ảnh hưởng của teacher (tương đương
 mô hình baseline không dùng FGL); $\alpha = 0$ khiến student học hoàn toàn từ teacher, không
 dùng nhãn thật.
@@ -182,10 +183,10 @@ mục~\ref{sec:cochetuonglai}.
 		\node[hop, below=of s2] (s3) {\textbf{Giai đoạn 3 - Student (FGL)}\\Huấn luyện student trên nhiệm vụ khó, có teacher (đã đóng băng) dẫn dắt qua hàm mất mát \eqref{eq:fgl-loss-ch3}};
 		\node[hop, below=of s3] (s4) {\textbf{Đánh giá}\\So sánh Baseline với Student trên cùng tập kiểm tra để đo tác dụng của FGL};
 
-		\draw[mui] (s1) - (s2);
-		\draw[mui] (s2) - (s3);
-		\draw[mui] (s3) - (s4);
-		\draw[mui, dashed] (s1.east) - ++(0.7cm,0) |- (s3.east);
+		\draw[mui] (s1) -- (s2);
+		\draw[mui] (s2) -- (s3);
+		\draw[mui] (s3) -- (s4);
+		\draw[mui, dashed] (s1.east) -- ++(0.7cm,0) |- (s3.east);
 	\end{tikzpicture}
 \end{figure}
 

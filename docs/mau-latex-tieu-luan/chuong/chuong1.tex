@@ -78,12 +78,13 @@ teacher đã huấn luyện xong, student được huấn luyện với hàm m�
 \begin{equation}
 \begin{split}
 	\mathcal{L}_{\text{student}} = &\ \alpha \cdot \mathcal{L}_{\text{CE}}\!\left(y^{(S)}, f_S(\mathbf{x})\right) \\
-	&+ (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\!\left(\operatorname{softmax}\!\left(\frac{f_T(\mathbf{x})}{T}\right) \,\middle\|\, \operatorname{softmax}\!\left(\frac{f_S(\mathbf{x})}{T}\right)\right),
+	&+ (1-\alpha) \cdot T^2 \cdot D_{\mathrm{KL}}\Bigl(\operatorname{softmax}_T\!\left(f_T(\mathbf{x})\right) \\
+	&\hspace{3.6cm} \big\|\; \operatorname{softmax}_T\!\left(f_S(\mathbf{x})\right)\Bigr),
 \end{split}
 	\label{eq:fgl-loss}
 \end{equation}
 trong đó $f_T(\mathbf{x})$ và $f_S(\mathbf{x})$ là logits (đầu ra trước softmax) của teacher
-và student trên \textit{cùng} đầu vào $\mathbf{x}$ của student, $\alpha \in [0,1]$ cân bằng
+và student trên \textit{cùng} đầu vào $\mathbf{x}$ của student, $\alpha \in [0.1]$ cân bằng
 giữa việc tin vào nhãn thật và tin vào teacher, còn $T$ (temperature) làm mềm phân phối xác
 suất trước khi so sánh. Chi tiết và ý nghĩa của từng tham số được trình bày trong
 Chương~\ref{chuong:phuongphap}.
@@ -130,6 +131,6 @@ Từ các phân tích trên, đóng góp chính của bài báo gốc có thể 
 	toán phân loại.
 	\item Thực nghiệm trên ba bộ dữ liệu thuộc hai lĩnh vực khác nhau: chuỗi hỗn loạn tổng hợp
 	Mackey-Glass (dự báo hồi quy), và hai bộ dữ liệu điện não đồ CHB-MIT và AES (dự báo cơn
-	động kinh), báo cáo mức giảm 23,4\% sai số MSE trên Mackey-Glass và mức tăng 44,8\% AUC-ROC
+	động kinh), báo cáo mức giảm 23.4\% sai số MSE trên Mackey-Glass và mức tăng 44.8\% AUC-ROC
 	trung bình trên CHB-MIT so với mô hình không dùng FGL.
 \end{itemize}

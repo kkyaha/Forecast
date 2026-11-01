@@ -1,14 +1,89 @@
 import argparse
 import pickle
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
+
+import matplotlib
+matplotlib.use("Agg")  # no display needed; script may run headless (Kaggle, CI, ...)
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+
 from utils.utils import RNN, create_time_series_dataset, KL
 
 # Check for GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# —— Dataviz palette (validated via dataviz skill's validate_palette.js) ——
+_BLUE, _ORANGE = "#2a78d6", "#eb6834"
+_INK, _INK_SEC, _MUTED = "#0b0b0b", "#52514e", "#898781"
+_GRID, _BASELINE_LINE, _SURFACE = "#e1e0d9", "#c3c2b7", "#fcfcfb"
+
+
+def find_thesis_hinh_dir():
+    """Locate docs/mau-latex-tieu-luan/hinh by walking up from this file. Falls back to
+    a local 'figures' folder next to the script (e.g. a fresh clone on Kaggle, where the
+    thesis directory doesn't exist)."""
+    here = Path(__file__).resolve()
+    for ancestor in here.parents:
+        candidate = ancestor / "docs" / "mau-latex-tieu-luan" / "hinh"
+        if candidate.is_dir():
+            return candidate
+    fallback = here.parent / "figures"
+    fallback.mkdir(exist_ok=True)
+    return fallback
+
+
+def plot_seed_sweep(df, out_dir):
+    """Bar chart of MSE reduction (%) per seed, with the across-seed average as a
+    reference line."""
+    plt.rcParams.update({
+        "font.family": "DejaVu Sans", "font.size": 10, "text.color": _INK,
+        "axes.edgecolor": _BASELINE_LINE, "axes.labelcolor": _INK_SEC,
+        "xtick.color": _MUTED, "ytick.color": _MUTED,
+        "figure.facecolor": _SURFACE, "axes.facecolor": _SURFACE,
+        "savefig.facecolor": _SURFACE,
+    })
+
+    fig, ax = plt.subplots(figsize=(6.3, 3.6))
+    ax.set_facecolor(_SURFACE)
+    for spine in ["top", "right", "left"]:
+        ax.spines[spine].set_visible(False)
+    ax.spines["bottom"].set_color(_BASELINE_LINE)
+    ax.tick_params(axis="both", length=0)
+    ax.grid(axis="y", color=_GRID, linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+
+    x = np.arange(len(df))
+    ax.bar(x, df["mse_reduction_pct"], width=0.55, color=_BLUE, zorder=3)
+    for xi, v in zip(x, df["mse_reduction_pct"]):
+        ax.text(xi, v + 0.8, f"{v:.1f}%", ha="center", va="bottom", fontsize=9,
+                color=_INK_SEC)
+
+    avg = df["mse_reduction_pct"].mean()
+    ax.axhline(avg, color=_ORANGE, linewidth=1.5, linestyle=(0, (4, 3)), zorder=2)
+    ax.text(0.02, 0.94, f"TB {len(df)} seed: {avg:.2f}%", transform=ax.transAxes,
+            ha="left", va="top", fontsize=9, color=_ORANGE)
+
+    ax.set_xlabel("Seed")
+    ax.set_xticks(x)
+    ax.set_xticklabels(df["seed"].astype(str))
+    ax.set_ylim(0, df["mse_reduction_pct"].max() + 10)
+    ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%d%%"))
+    ax.set_ylabel("Giảm MSE: Baseline → Student (%)")
+    ax.set_title("Sweep seed — Mackey-Glass", fontsize=10, color=_INK, pad=8)
+
+    fig.tight_layout()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_dir / "kq-mg-seed.pdf", bbox_inches="tight")
+    fig.savefig(out_dir / "kq-mg-seed.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[plot] Saved kq-mg-seed.{{pdf,png}} to {out_dir}")
 
 class EarlyStopper:
     def __init__(self, patience=5, min_delta=1e-4):
@@ -227,19 +302,57 @@ if __name__ == "__main__":
     parser.add_argument("--arch", type=str, default="rnn", choices=["rnn", "lstm", "gru"],
                         help="Recurrent cell for Teacher/Baseline/Student (default: rnn, "
                              "matches the author's original architecture)")
+    parser.add_argument("--seed_sweep", type=str, default=None,
+                        help="Comma-separated seeds (e.g. 0,1,2,3,4,42). When given, runs "
+                             "train_student_model once per seed instead of a single run with "
+                             "--seed, then saves seed_sweep_results.csv and a summary chart "
+                             "(mirrors the stability check in Chuong 5 of the thesis).")
 
     args = parser.parse_args()
 
-    results = train_student_model(
-        student_horizon   = args.horizon,
-        alpha             = args.alpha,
-        num_bins          = args.num_bins,
-        val_size          = args.val_size,
-        test_size         = args.test_size,
-        epochs            = args.epochs,
-        seed              = args.seed,
-        temperature       = args.temperature,
-        lookback_window   = args.lookback_window,
-        batch_size        = args.batch_size,
-        arch              = args.arch
-    )
+    if args.seed_sweep:
+        seeds = [int(s) for s in args.seed_sweep.split(",")]
+        rows = []
+        for s in seeds:
+            r = train_student_model(
+                student_horizon   = args.horizon,
+                alpha             = args.alpha,
+                num_bins          = args.num_bins,
+                val_size          = args.val_size,
+                test_size         = args.test_size,
+                epochs            = args.epochs,
+                seed              = s,
+                temperature       = args.temperature,
+                lookback_window   = args.lookback_window,
+                batch_size        = args.batch_size,
+                arch              = args.arch
+            )
+            reduction_pct = (r["baseline"] - r["student"]) / r["baseline"] * 100
+            rows.append({
+                "seed": s,
+                "teacher_mse": r["teacher"],
+                "baseline_mse": r["baseline"],
+                "student_mse": r["student"],
+                "mse_reduction_pct": reduction_pct,
+            })
+
+        df_seed = pd.DataFrame(rows)
+        df_seed.to_csv("seed_sweep_results.csv", index=False)
+        print("\nSaved raw results to seed_sweep_results.csv")
+        print(df_seed)
+
+        plot_seed_sweep(df_seed, find_thesis_hinh_dir())
+    else:
+        results = train_student_model(
+            student_horizon   = args.horizon,
+            alpha             = args.alpha,
+            num_bins          = args.num_bins,
+            val_size          = args.val_size,
+            test_size         = args.test_size,
+            epochs            = args.epochs,
+            seed              = args.seed,
+            temperature       = args.temperature,
+            lookback_window   = args.lookback_window,
+            batch_size        = args.batch_size,
+            arch              = args.arch
+        )

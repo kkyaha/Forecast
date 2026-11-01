@@ -1,4 +1,4 @@
-% CHƯƠNG 5 - Rubric: Phân tích, hiểu code thực nghiệm (2,5 điểm)
+% CHƯƠNG 5 - Rubric: Phân tích, hiểu code thực nghiệm (2.5 điểm)
 \chapter{Tái hiện thực nghiệm}
 \label{chuong:taihien}
 
@@ -42,15 +42,15 @@ Bảng~\ref{bang:mg-chuan}.
 		\toprule
 		\textbf{Mô hình} & \textbf{MSE trên tập kiểm tra} \\
 		\midrule
-		Teacher (dự báo 1 bước) & 5,4391 \\
-		Baseline (dự báo 5 bước, không FGL) & 139,3832 \\
-		Student (dự báo 5 bước, có FGL) & 104,3942 \\
+		Teacher (dự báo 1 bước) & 5.4391 \\
+		Baseline (dự báo 5 bước, không FGL) & 139.3832 \\
+		Student (dự báo 5 bước, có FGL) & 104.3942 \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-Mức giảm MSE từ Baseline sang Student là $(139,3832 - 104,3942)/139,3832 \approx 25,1\%$, khớp
-khá sát với mức \textbf{23,4\%} tác giả công bố (có loại outlier), ngay từ lần chạy đầu tiên
+Mức giảm MSE từ Baseline sang Student là $(139.3832 - 104.3942)/139.3832 \approx 25.1\%$, khớp
+khá sát với mức \textbf{23.4\%} tác giả công bố (có loại outlier), ngay từ lần chạy đầu tiên
 với đúng tham số mẫu, chưa chỉnh gì thêm.
 
 \subsection{Sweep sáu seed để kiểm tra độ ổn định}
@@ -68,28 +68,28 @@ Bảng~\ref{bang:mg-sweep}.
 		\toprule
 		\textbf{Seed} & \textbf{Teacher} & \textbf{Baseline} & \textbf{Student} & \textbf{Giảm MSE} \\
 		\midrule
-		0  & 4,8331 & 156,1701 & 102,7514 & 34,20\% \\
-		1  & 5,4642 & 136,5673 & 106,0795 & 22,32\% \\
-		2  & 5,7293 & 143,5308 & 104,4262 & 27,25\% \\
-		3  & 6,2236 & 140,3592 & 107,6203 & 23,32\% \\
-		4  & 7,4506 & 147,5238 & 108,6868 & 26,33\% \\
-		42 & 5,4391 & 139,3832 & 104,3942 & 25,10\% \\
+		0  & 4.8331 & 156.1701 & 102.7514 & 34.20\% \\
+		1  & 5.4642 & 136.5673 & 106.0795 & 22.32\% \\
+		2  & 5.7293 & 143.5308 & 104.4262 & 27.25\% \\
+		3  & 6.2236 & 140.3592 & 107.6203 & 23.32\% \\
+		4  & 7.4506 & 147.5238 & 108.6868 & 26.33\% \\
+		42 & 5.4391 & 139.3832 & 104.3942 & 25.10\% \\
 		\midrule
-		\textbf{TB} & 5,857 & 143,922 & 105,660 & \textbf{26,42\%} \\
+		\textbf{TB} & 5.857 & 143.922 & 105.660 & \textbf{26.42\%} \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
 Toàn bộ sáu seed đều cho Student MSE thấp hơn Baseline MSE - FGL cải thiện nhất quán, không
-có seed nào đảo chiều. Mức cải thiện trung bình 26,42\% (độ lệch chuẩn 3,86) \textbf{cao hơn
-một chút} so với 23,4\% công bố, có thể do khác biệt nhỏ về cách loại outlier mà tác giả áp dụng mà thực nghiệm
+có seed nào đảo chiều. Mức cải thiện trung bình 26.42\% (độ lệch chuẩn 3.86) \textbf{cao hơn
+một chút} so với 23.4\% công bố, có thể do khác biệt nhỏ về cách loại outlier mà tác giả áp dụng mà thực nghiệm
 này chưa làm, hoặc do bài báo lấy trung bình trên nhiều cấu hình thực nghiệm hơn. Dù vậy, kết
 quả tái hiện khớp \textbf{đúng hướng và đúng độ lớn} với số liệu công bố.
 
 \subsection{Thực nghiệm mở rộng của tác giả: quét tầm dự báo với Page-Hinkley}
 
 Kịch bản \texttt{drift\_exp.py} (của tác giả, không phải tự đề xuất) quét tầm dự báo từ 2 đến
-15 bước, với $\alpha = 0,0$ (student học hoàn toàn từ teacher, không dùng nhãn thật). Kết quả
+15 bước, với $\alpha = 0.0$ (student học hoàn toàn từ teacher, không dùng nhãn thật). Kết quả
 trình bày trong Bảng~\ref{bang:mg-drift}.
 
 \begin{table}[H]{Kết quả quét tầm dự báo 2-15 với Page-Hinkley trên Mackey-Glass}
@@ -100,66 +100,64 @@ trình bày trong Bảng~\ref{bang:mg-drift}.
 		\toprule
 		\textbf{H} & \textbf{Teacher} & \textbf{Baseline} & \textbf{Student} & \textbf{Giảm MSE} \\
 		\midrule
-		2  & 0,4479 & 0,6943 & 0,7443 & $-7,20\%$ \\
-		3  & 0,4458 & 1,5198 & 1,2870 & 15,32\% \\
-		4  & 0,4542 & 2,5526 & 2,0479 & 19,77\% \\
-		5  & 0,4516 & 3,5365 & 3,0359 & 14,15\% \\
-		6  & 0,4453 & 4,3719 & 3,9307 & 10,09\% \\
-		7  & 0,4573 & 4,9760 & 4,7771 & 4,00\% \\
-		8  & 0,4562 & 5,2880 & 5,0052 & 5,35\% \\
-		9  & 0,4589 & 5,5932 & 5,1766 & 7,45\% \\
-		10 & 0,4469 & 4,9651 & 4,5422 & 8,52\% \\
-		11 & 0,4365 & 4,0057 & 3,3552 & 16,24\% \\
-		12 & 0,4380 & 3,1568 & 2,6109 & 17,29\% \\
-		13 & 0,4359 & 2,7406 & 2,3344 & 14,82\% \\
-		14 & 0,4401 & 2,3135 & 2,0281 & 12,34\% \\
-		15 & 0,4469 & 2,1323 & 1,8453 & 13,46\% \\
+		2  & 0.4479 & 0.6943 & 0.7443 & $-7.20\%$ \\
+		3  & 0.4458 & 1.5198 & 1.2870 & 15.32\% \\
+		4  & 0.4542 & 2.5526 & 2.0479 & 19.77\% \\
+		5  & 0.4516 & 3.5365 & 3.0359 & 14.15\% \\
+		6  & 0.4453 & 4.3719 & 3.9307 & 10.09\% \\
+		7  & 0.4573 & 4.9760 & 4.7771 & 4.00\% \\
+		8  & 0.4562 & 5.2880 & 5.0052 & 5.35\% \\
+		9  & 0.4589 & 5.5932 & 5.1766 & 7.45\% \\
+		10 & 0.4469 & 4.9651 & 4.5422 & 8.52\% \\
+		11 & 0.4365 & 4.0057 & 3.3552 & 16.24\% \\
+		12 & 0.4380 & 3.1568 & 2.6109 & 17.29\% \\
+		13 & 0.4359 & 2.7406 & 2.3344 & 14.82\% \\
+		14 & 0.4401 & 2.3135 & 2.0281 & 12.34\% \\
+		15 & 0.4469 & 2.1323 & 1.8453 & 13.46\% \\
 		\midrule
-		\textbf{TB} & 0,446 & - & - & \textbf{10,83\%} \\
-		\textbf{TB (bỏ H=2)} & - & - & - & \textbf{12,22\%} \\
+		\textbf{TB} & 0.446 & - & - & \textbf{10.83\%} \\
+		\textbf{TB (bỏ H=2)} & - & - & - & \textbf{12.22\%} \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-13/14 giá trị horizon cho FGL cải thiện; chỉ \textbf{horizon=2 là ngoại lệ âm} ($-7,20\%$), tức
+13/14 giá trị horizon cho FGL cải thiện; chỉ \textbf{horizon=2 là ngoại lệ âm} ($-7.20\%$), tức
 ở tầm dự báo rất ngắn, FGL kết hợp Page-Hinkley \textbf{làm tệ hơn} so với không dùng FGL.
-Teacher MSE gần như hằng số ($\approx 0,44$-$0,46$) ở mọi horizon, hợp lý vì teacher luôn giải
+Teacher MSE gần như hằng số ($\approx 0.44$-$0.46$) ở mọi horizon, hợp lý vì teacher luôn giải
 bài toán 1 bước cố định. Baseline MSE không tăng đơn điệu theo horizon (tăng từ h=2 đến h=9,
 rồi giảm từ h=10 đến h=15) - quan sát thú vị, có thể liên quan tới chu kỳ trễ đặc trưng
 $\tau=17$ của hệ Mackey-Glass, không phải lỗi mã nguồn.
 
+Hình~\ref{hinh:mg-phantich} tổng hợp trực quan hai thực nghiệm trên: panel (a) vẽ lại
+Bảng~\ref{bang:mg-drift} (mức giảm MSE theo horizon, điểm đỏ đánh dấu ngoại lệ âm tại h=2);
+panel (b) vẽ lại Bảng~\ref{bang:mg-sweep} (mức giảm MSE theo seed, đường nét đứt là mức trung
+bình 26.42\%). Việc vẽ hình không còn là bước hậu kỳ tách rời: \texttt{exp/drift\_exp.py} và
+\texttt{exp/base\_exp.py --seed\_sweep} (thêm vào chính mã nguồn chạy thực nghiệm) tự lưu
+\texttt{*\_results.csv} và xuất thẳng hai biểu đồ con này mỗi khi chạy xong sweep. Hình gộp cả
+hai panel trong luận văn được dựng bằng notebook
+\texttt{repro/notebook/phantich\_ketqua\_mackeyglass.ipynb}, đọc trực tiếp log gốc
+\texttt{drift\_exp\_full.log} (parse bằng regex, không chép tay số liệu) và tệp
+\texttt{seed\_sweep\_results.csv}.
+
+\begin{figure}[H]{Mức giảm MSE của Student (FGL) so với Baseline trên Mackey-Glass: theo
+horizon (a) và theo seed (b)}
+	\label{hinh:mg-phantich}
+	\centering
+	\includegraphics[width=\textwidth]{kq-mackeyglass-phantich}
+\end{figure}
+
 \section{Kết quả tái hiện trên CHB-MIT}
 \label{sec:chbmit-ketqua}
 
-Trên máy cá nhân, Giai đoạn 1 (Teacher, bệnh nhân 1) cho AUC-ROC $=0,28$ - thấp hơn một bộ
-phân loại ngẫu nhiên (0,5), một kết quả bất thường; Giai đoạn 2 và 3 không hoàn thành do hết bộ
-nhớ khi xây dựng cache đặc trưng STFT. Thực nghiệm sau đó được chạy lại trên GPU Kaggle, từ bản
-sạch của repo gốc tác giả, mở rộng dần từ ba lên sáu bệnh nhân (1, 3, 5, 9, 13, 23) - chọn đa
-dạng theo kết quả Bảng 1 của bài báo gốc: bệnh nhân 13 đạt AUC cao nhất (1,00), bệnh nhân 9 thấp
-nhất (0,57), bệnh nhân 23 là trường hợp FGL duy nhất thua CNN-LSTM baseline trong bài báo. Tại
-thời điểm viết báo cáo, sáu bệnh nhân hoàn thành các giai đoạn ở mức độ khác nhau (Bảng~\ref{bang:chbmit-tiendo}).
-
-\begin{table}[H]{Tiến độ ba giai đoạn huấn luyện theo bệnh nhân}
-	\label{bang:chbmit-tiendo}
-	\centering
-	\begin{tabular}{cccc}
-		\toprule
-		\textbf{Bệnh nhân} & \textbf{Teacher} & \textbf{Baseline} & \textbf{Student (FGL)} \\
-		\midrule
-		1  & Xong & Xong & Xong \\
-		3  & Xong & Xong & Xong \\
-		5  & Xong & Xong & Xong \\
-		9  & Chưa & Chưa & Chưa \\
-		13 & Xong & Chưa & Xong \\
-		23 & Xong & Chưa & Chưa \\
-		\bottomrule
-	\end{tabular}
-\end{table}
-
-Bệnh nhân 9 chưa huấn luyện được ở bất kỳ giai đoạn nào dù đã áp dụng cơ chế tự phát hiện và xoá
-cache hỏng (do hết dung lượng đĩa ở phiên Kaggle trước) rồi thử lại - nguyên nhân cụ thể còn
-cần điều tra thêm, có thể không chỉ do hết đĩa. Bệnh nhân 13 và 23 mới có Teacher, Giai đoạn 2
-(Baseline) của hai bệnh nhân này chưa chạy nên chưa so sánh được mức tăng của FGL.
+Trên máy cá nhân, Giai đoạn 1 (Teacher, bệnh nhân 1) cho AUC-ROC $=0.28$ - thấp hơn một bộ
+phân loại ngẫu nhiên (0.5), một kết quả bất thường; Giai đoạn 2 và 3 không hoàn thành do hết bộ
+nhớ khi xây dựng cache đặc trưng STFT. Thực nghiệm sau đó được chuyển sang chạy trên GPU Kaggle,
+từ bản sạch của repo gốc tác giả. Do giới hạn tài nguyên GPU miễn phí của Kaggle
+(\textasciitilde 12 giờ/phiên, \textasciitilde 30 giờ GPU/tuần), báo cáo chọn test thử sâu trên
+\textbf{ba bệnh nhân (1, 3, 5)} --- chạy đủ cả ba giai đoạn, và lặp lại độc lập \textbf{hai lần}
+để kiểm tra độ ổn định của kết quả --- thay vì dàn trải mỏng trên toàn bộ 12 bệnh nhân mà bài
+báo gốc dùng. Các bệnh nhân còn lại trong danh sách của bài báo gốc tạm thời được gác lại, dự
+kiến mở rộng ở báo cáo cuối kỳ.
 
 \begin{table}[H]{AUC-ROC của Teacher (Giai đoạn 1) theo bệnh nhân, chạy trên Kaggle}
 	\label{bang:chbmit-detection}
@@ -168,20 +166,20 @@ cần điều tra thêm, có thể không chỉ do hết đĩa. Bệnh nhân 13 
 		\toprule
 		\textbf{Bệnh nhân} & \textbf{AUC-ROC} \\
 		\midrule
-		1 (trung bình 3 lần chạy) & 0,6451 \\
-		3 & 0,9067 \\
-		5 & 0,9911 \\
-		13 & 0,7286 \\
-		23 & 0,9822 \\
+		1 (trung bình 3 lần chạy) & 0.6451 \\
+		3 & 0.9067 \\
+		5 & 0.9911 \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-Tất cả đều cao hơn rõ rệt mức ngẫu nhiên - khác hẳn kết quả bất thường (0,28) trên máy cá
+Tất cả đều cao hơn rõ rệt mức ngẫu nhiên - khác hẳn kết quả bất thường (0.28) trên máy cá
 nhân, cho thấy đó nhiều khả năng là một lần khởi tạo ngẫu nhiên không may
 (\texttt{seizure\_detection.py} không cố định seed) hơn là lỗi hệ thống; nghi vấn \texttt{shuffle=False}
 (mục~\ref{item:shuffle-false}) chưa bị bác bỏ hoàn toàn nhưng không còn đủ cơ sở khẳng định là
-nguyên nhân chính.
+nguyên nhân chính. Tệp kết quả xuất ra của lần chạy 2 (mục~\ref{sec:chbmit-hailanchay}) còn cho
+AUC-ROC Teacher của hai bệnh nhân khác chưa từng thử (13: 0.73; 23: 0.98), xem Hình~\ref{hinh:chbmit-phantich}a
+- cũng cao hơn ngẫu nhiên rõ rệt, dù chưa chạy đủ Giai đoạn 2-3 để so sánh Baseline/FGL.
 
 \subsection{Baseline so với Student/FGL: hai lần chạy độc lập}
 \label{sec:chbmit-hailanchay}
@@ -201,11 +199,11 @@ cũng nhạy với lần khởi tạo ngẫu nhiên, không chỉ Mackey-Glass.
 		\toprule
 		\textbf{Bệnh nhân} & \textbf{Baseline} & \textbf{Student (FGL)} & \textbf{Mức tăng} \\
 		\midrule
-		1 & 0,9173 & 0,9068 & $-1,1\%$ \\
-		3 & 0,4276 & 0,7253 & $+69,6\%$ \\
-		5 & 0,1963 & 0,3901 & $+98,7\%$ \\
+		1 & 0.9173 & 0.9068 & $-1.1\%$ \\
+		3 & 0.4276 & 0.7253 & $+69.6\%$ \\
+		5 & 0.1963 & 0.3901 & $+98.7\%$ \\
 		\midrule
-		\textbf{Trung bình 3 bệnh nhân} & \textbf{0,5137} & \textbf{0,6741} & \textbf{+31,2\%} \\
+		\textbf{Trung bình 3 bệnh nhân} & \textbf{0.5137} & \textbf{0.6741} & \textbf{+31.2\%} \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -217,48 +215,44 @@ cũng nhạy với lần khởi tạo ngẫu nhiên, không chỉ Mackey-Glass.
 		\toprule
 		\textbf{Bệnh nhân} & \textbf{Baseline} & \textbf{Student (FGL)} & \textbf{Mức tăng} \\
 		\midrule
-		1 & 0,6825 & 0,7071 & $+3,6\%$ \\
-		3 & 0,3905 & 0,5667 & $+45,1\%$ \\
-		5 & 0,0431 & 0,5695 & $+1221\%$\footnotemark \\
+		1 & 0.6825 & 0.9533 & $+39.7\%$ \\
+		3 & 0.3905 & 0.7377 & $+88.9\%$ \\
+		5 & 0.0431 & 0.3849 & $+792.9\%$\footnotemark \\
 		\midrule
-		\textbf{Trung bình 3 bệnh nhân} & \textbf{0,3720} & \textbf{0,6144} & \textbf{+65,2\%} \\
+		\textbf{Trung bình 3 bệnh nhân} & \textbf{0.3720} & \textbf{0.6919} & \textbf{+86.0\%} \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 \footnotetext{Baseline bệnh nhân 5 ở lần chạy 2 gần như suy biến: 2/3 trial có
-FPR = Sensitivity = 0 (mô hình dự báo toàn bộ về một lớp), kéo AUC trung bình xuống 0,0431 -
-gần mức một mô hình không học được gì. Với mẫu số gần 0, mức tăng phần trăm (+1221\%) không
-còn nhiều ý nghĩa thống kê; nên đọc cùng với \textbf{giá trị AUC tuyệt đối} (0,57) chứ không chỉ
+FPR = Sensitivity = 0 (mô hình dự báo toàn bộ về một lớp), kéo AUC trung bình xuống 0.0431 -
+gần mức một mô hình không học được gì. Với mẫu số gần 0, mức tăng phần trăm (+792.9\%) không
+còn nhiều ý nghĩa thống kê; nên đọc cùng với \textbf{giá trị AUC tuyệt đối} (0.38) chứ không chỉ
 tỉ lệ tăng.}
 
-Mỗi bệnh nhân chạy ba trial; kết quả giữa hai lần chạy khác biệt rõ rệt dù cùng mã nguồn và
-siêu tham số: mức tăng trung bình trên ba bệnh nhân là \textbf{+31,2\%} ở lần 1 nhưng
-\textbf{+65,2\%} ở lần 2 - chênh lệch hơn gấp đôi, chỉ do khác seed ngẫu nhiên. Bệnh nhân 1 đặc
-biệt nhạy: Baseline dao động từ 0,92 (lần 1) xuống 0,68 (lần 2), và mức tăng của FGL đổi từ âm
-nhẹ ($-1,1\%$) sang dương nhẹ ($+3,6\%$). Bệnh nhân 5 cũng cho thấy Baseline có thể suy biến gần
-hoàn toàn ở một lần chạy (0,04) nhưng không phải lần khác (0,20) - CNN-LSTM baseline cho bài
-toán dự báo (preictal vs.\ interictal, khó hơn phát hiện) dường như kém ổn định khi huấn luyện
-với dữ liệu ít và không cố định seed.
+Baseline chạy ba trial mỗi bệnh nhân (Student/FGL ở lần chạy 2 chỉ còn giữ được một trial trong
+tệp kết quả xuất ra - xem Hình~\ref{hinh:chbmit-phantich}); kết quả giữa hai lần chạy khác biệt
+rõ rệt dù cùng mã nguồn và siêu tham số: mức tăng trung bình trên ba bệnh nhân là \textbf{+31.2\%}
+ở lần 1 nhưng \textbf{+86.0\%} ở lần 2 - chênh lệch hơn gấp đôi, chỉ do khác seed ngẫu nhiên và
+số trial Student. Bệnh nhân 1 đặc biệt nhạy: Baseline dao động từ 0.92 (lần 1) xuống 0.68 (lần
+2), và mức tăng của FGL đổi từ âm nhẹ ($-1.1\%$) ở lần 1 sang dương rõ rệt ($+39.7\%$) ở lần 2.
+Bệnh nhân 5 cũng cho thấy Baseline có thể suy biến gần hoàn toàn ở một lần chạy (0.04) nhưng
+không phải lần khác (0.20) - CNN-LSTM baseline cho bài toán dự báo (preictal vs.\ interictal, khó
+hơn phát hiện) dường như kém ổn định khi huấn luyện với dữ liệu ít và không cố định seed.
 
-So với mức 44,8\% bài báo công bố, cả hai lần chạy ba bệnh nhân đều \textbf{thấp hơn}, nhưng
-theo hai hướng khác nhau (31,2\% và 65,2\%) - bản thân khoảng cách giữa hai con số này
-(\textasciitilde34 điểm phần trăm, trên cùng ba bệnh nhân) đã lớn hơn khoảng cách giữa mỗi con
-số với 44,8\%. Điều này củng cố thêm nhận định ở mục~\ref{sec:mg-sweep-seed} rằng, với số lần
-lặp lại còn ít, kết quả tái hiện nên được đọc là ``khớp hướng'' (FGL cải thiện so với Baseline)
-chứ chưa phải một ước lượng đáng tin cậy cho \textit{độ lớn} chính xác của mức cải thiện.
-
-Bệnh nhân 13 - bệnh nhân có AUC cao nhất trong bài báo gốc (1,00) - cho AUC Student/FGL
-trung bình \textbf{0,9798} (ba trial: 0,957; 0,983; 1,000), nhất quán cao và ổn định hơn hẳn so
-với các bệnh nhân khác, dù chưa có Baseline để tính mức tăng tương ứng. Đây là quan sát cùng
-hướng với bài báo gốc (bệnh nhân 13 dễ nhất), nhưng cần Giai đoạn 2 hoàn tất mới kết luận được
-về mức cải thiện.
+So với mức 44.8\% bài báo công bố, lần chạy 1 \textbf{thấp hơn} (+31.2\%) trong khi lần chạy 2
+lại \textbf{cao hơn} (+86.0\%) - khoảng cách giữa hai lần chạy của chính báo cáo này
+(\textasciitilde55 điểm phần trăm, trên cùng ba bệnh nhân) còn lớn hơn khoảng cách từ mỗi lần
+chạy tới con số 44.8\% của bài báo. Vì vậy không thể kết luận tái hiện ``thấp hơn'' hay ``cao
+hơn'' bài báo một cách nhất quán; điều này củng cố thêm nhận định ở mục~\ref{sec:mg-sweep-seed}
+rằng, với số lần lặp lại còn ít (đặc biệt Student/FGL lần 2 chỉ còn 1 trial/bệnh nhân), kết quả
+tái hiện nên được đọc là ``khớp hướng'' (FGL cải thiện so với Baseline) chứ chưa phải một ước
+lượng đáng tin cậy cho \textit{độ lớn} chính xác của mức cải thiện.
 
 \subsection{Đối chiếu trực tiếp với số liệu công bố theo từng bệnh nhân}
 
 Bài báo gốc công bố AUC-ROC của CNN-LSTM và FGL cho từng bệnh nhân (Bảng 1 trong bài báo), cho
-phép đối chiếu trực tiếp thay vì chỉ so sánh mức trung bình. Bảng~\ref{bang:chbmit-doichieu-baibao}
-chỉ liệt kê ba bệnh nhân có đủ cả Baseline và FGL để so sánh (1, 3, 5); bệnh nhân 9, 13, 23
-chưa đủ dữ liệu (mục~\ref{sec:chbmit-ketqua}) nên không đưa vào.
+phép đối chiếu trực tiếp thay vì chỉ so sánh mức trung bình, trên đúng ba bệnh nhân đã test thử
+(1, 3, 5).
 
 \begin{table}[H]{Đối chiếu AUC-ROC tái hiện với số liệu công bố (bệnh nhân 1, 3, 5)}
 	\label{bang:chbmit-doichieu-baibao}
@@ -269,28 +263,35 @@ chưa đủ dữ liệu (mục~\ref{sec:chbmit-ketqua}) nên không đưa vào.
 		& \multicolumn{2}{c}{\textbf{Bài báo}} & \multicolumn{2}{c}{\textbf{Tái hiện (L1 / L2)}} \\
 		\textbf{Bệnh nhân} & \textbf{CNN-LSTM} & \textbf{FGL} & \textbf{Baseline} & \textbf{FGL} \\
 		\midrule
-		1 & 0,92 & 0,98 & 0,92 / 0,68 & 0,91 / 0,71 \\
-		3 & 0,27 & 0,97 & 0,43 / 0,39 & 0,73 / 0,57 \\
-		5 & 0,12 & 0,96 & 0,20 / 0,04 & 0,39 / 0,57 \\
+		1 & 0.92 & 0.98 & 0.92 / 0.68 & 0.91 / 0.95 \\
+		3 & 0.27 & 0.97 & 0.43 / 0.39 & 0.73 / 0.74 \\
+		5 & 0.12 & 0.96 & 0.20 / 0.04 & 0.39 / 0.38 \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
+\begin{figure}[H]{AUC-ROC Teacher mở rộng (5 bệnh nhân) và đối chiếu Baseline/FGL với bài báo gốc
+qua hai lần chạy, CHB-MIT}
+	\label{hinh:chbmit-phantich}
+	\centering
+	\includegraphics[width=\textwidth]{kq-chbmit-phantich}
+\end{figure}
+
 Hai quan sát nổi bật. \textbf{Thứ nhất}, Baseline tái hiện khớp khá tốt với CNN-LSTM công bố ở
-bệnh nhân 1 (0,92 ở lần 1, trùng khít) và tương đối gần ở bệnh nhân 5 (0,20 so với 0,12 ở lần
-1), trong khi FGL tái hiện lại lệch xa so với FGL công bố ở hầu hết các trường hợp (bệnh nhân 3:
-0,57-0,73 so với 0,97; bệnh nhân 5: 0,39-0,57 so với 0,96) - ngoại lệ là bệnh nhân 13 ở trên,
-nơi FGL tái hiện gần như trùng khít bài báo. \textbf{Thứ hai}, một khác biệt cấu hình cụ thể
-được bài báo nêu rõ trong phần Methods có thể giải thích phần lớn độ lệch này: tác giả chọn
-$\alpha$ \textit{tối ưu riêng cho từng bệnh nhân} qua một hyperparameter sweep, trong khi thực
-nghiệm tái hiện này dùng $\alpha=0,5$ \textbf{cố định cho mọi bệnh nhân}. Ở bệnh nhân 13, giá trị
-$\alpha=0,5$ có thể tình cờ gần với giá trị tối ưu của bài báo (FGL khớp sát); ở bệnh nhân 3 và
-5, giá trị tối ưu thực sự theo bài báo nhiều khả năng khác xa 0,5, nên FGL tái hiện với $\alpha$
-cố định không đạt được mức cải thiện tương ứng. Đây là một giả thuyết hợp lý về nguyên nhân
-chính của khoảng cách với bài báo, nhưng \textbf{chưa được kiểm chứng trực tiếp} (cần quét
-$\alpha$ theo từng bệnh nhân như bài báo gốc để xác nhận).
+bệnh nhân 1 (0.92 ở lần 1, trùng khít) và tương đối gần ở bệnh nhân 5 (0.20 so với 0.12 ở lần
+1), trong khi FGL tái hiện lại thấp hơn rõ rệt so với FGL công bố ở cả ba bệnh nhân, dù khá nhất
+quán giữa hai lần chạy (Hình~\ref{hinh:chbmit-phantich}b): bệnh nhân 3 (0.73-0.74 so với 0.97),
+bệnh nhân 5 (0.38-0.39 so với 0.96), và gần nhất là bệnh nhân 1 (0.91-0.95 so với 0.98).
+\textbf{Thứ hai}, một khác biệt cấu hình cụ thể được bài báo nêu rõ trong phần Methods có thể
+giải thích phần lớn độ lệch này: tác giả chọn $\alpha$ \textit{tối ưu riêng cho từng bệnh nhân}
+qua một hyperparameter sweep, trong khi thực nghiệm tái hiện này dùng $\alpha=0.5$ \textbf{cố
+định cho mọi bệnh nhân}; nếu giá trị tối ưu thực sự theo bài báo khác xa 0.5, FGL tái hiện với
+$\alpha$ cố định sẽ không đạt được mức cải thiện tương ứng. Đây là một giả thuyết hợp lý về
+nguyên nhân chính của khoảng cách với bài báo, nhưng \textbf{chưa được kiểm chứng trực tiếp}
+(cần quét $\alpha$ theo từng bệnh nhân như bài báo gốc để xác nhận).
 
 \section{Các vấn đề phát hiện khi chạy mã nguồn}
+\label{sec:cacvandephathien}
 
 Quá trình tái hiện phát hiện chín vấn đề cụ thể trong mã nguồn công khai của tác giả, cho thấy
 mã nguồn ở trạng thái công bố \textbf{không chạy được ngay} mà cần chỉnh sửa:
@@ -314,7 +315,7 @@ mã nguồn ở trạng thái công bố \textbf{không chạy được ngay} m�
 	có GPU NVIDIA; đã vá thành tự nhận biết MPS/CUDA/CPU.
 	\item \textbf{Nghi vấn \texttt{shuffle=False}} \label{item:shuffle-false} trên dữ liệu
 	teacher CHB-MIT đã sắp theo thứ tự lớp (toàn interictal rồi toàn ictal) - có thể là
-	nguyên nhân AUC bất thường (0,28) ở lần chạy local, nhưng chưa xác nhận trực tiếp.
+	nguyên nhân AUC bất thường (0.28) ở lần chạy local, nhưng chưa xác nhận trực tiếp.
 	\item \textbf{Cache gom toàn bộ dữ liệu một loại nhãn vào bộ nhớ} trước khi ghi đĩa -
 	nguyên nhân hết bộ nhớ khi xử lý Giai đoạn 2/3 của CHB-MIT trên máy cá nhân.
 	\item \textbf{Cache đặc trưng STFT (\texttt{.hickle}) không được dọn qua các lần chạy và
@@ -331,20 +332,25 @@ mã nguồn ở trạng thái công bố \textbf{không chạy được ngay} m�
 
 Nhìn chung, thực nghiệm Mackey-Glass cho thấy FGL là một phương pháp \textbf{tái hiện được}
 cả về hướng và độ lớn cải thiện, với điều kiện phải sửa các lỗi mã nguồn ở mục trên trước; kết
-quả ổn định trên nhiều seed, không phụ thuộc vào một lần chạy may rủi. Trên CHB-MIT, FGL cải
-thiện trên ba bệnh nhân có đủ dữ liệu so sánh (1, 3, 5), nhưng mức cải thiện trung bình đo được
-lệch đáng kể giữa hai lần chạy độc lập cùng ba bệnh nhân này: $+31,2\%$ ở lần 1 và $+65,2\%$ ở
-lần 2 (mục~\ref{sec:chbmit-hailanchay}) - cả hai đều thấp hơn mức 44,8\% bài báo công bố,
-nhưng khoảng cách \textit{giữa hai lần chạy của chính báo cáo này} còn lớn hơn khoảng cách tới
-con số của bài báo, cho thấy với số bệnh nhân và số trial hiện có, mức cải thiện đo được chưa
-đủ ổn định để khẳng định một con số cụ thể. Điểm cải thiện nhất quán cả hai lần là \textit{hướng}
-của FGL (luôn tốt hơn hoặc xấp xỉ Baseline, không đảo chiều mạnh) và việc bệnh nhân có Baseline
-yếu luôn được FGL cải thiện nhiều hơn bệnh nhân có Baseline đã mạnh. Bệnh nhân 13 (AUC cao nhất
-trong bài báo gốc) cho Student/FGL rất cao và ổn định (0,98) ngay ở Giai đoạn 1 và 3, cùng hướng
-với bài báo dù chưa có Baseline để so sánh mức tăng. Bệnh nhân 9 vẫn chưa huấn luyện thành công
-ở bất kỳ giai đoạn nào sau nhiều lần thử, và bệnh nhân 23 mới có Teacher - phần mở rộng lên
-sáu bệnh nhân vì vậy chưa hoàn tất, nên các nhận định trên CHB-MIT trong báo cáo này vẫn nên
-được đọc là bằng chứng ban đầu. Điểm tích cực là chỉ số AUC bất thường (0,28) của Teacher trên
-máy cá nhân không lặp lại trên Kaggle ở bất kỳ bệnh nhân hay lần chạy nào. Việc không tái hiện
-được AES hoàn toàn là do giới hạn thời gian và việc tải dữ liệu, không phản ánh đánh giá về bản
-thân phương pháp trên bộ dữ liệu này.
+quả ổn định trên nhiều seed, không phụ thuộc vào một lần chạy may rủi (Hình~\ref{hinh:mg-phantich}).
+Trên CHB-MIT, FGL cải thiện trên ba bệnh nhân có đủ dữ liệu so sánh (1, 3, 5), nhưng mức cải
+thiện trung bình đo được lệch đáng kể giữa hai lần chạy độc lập cùng ba bệnh nhân này:
+$+31.2\%$ ở lần 1 và $+86.0\%$ ở lần 2 (mục~\ref{sec:chbmit-hailanchay}) - lần 1 thấp hơn còn
+lần 2 lại cao hơn mức 44.8\% bài báo công bố, và khoảng cách \textit{giữa hai lần chạy của chính
+báo cáo này} còn lớn hơn khoảng cách tới con số của bài báo, cho thấy với số bệnh nhân và số
+trial hiện có (đặc biệt Student/FGL lần 2 chỉ còn 1 trial/bệnh nhân trong tệp kết quả xuất ra),
+mức cải thiện đo được chưa đủ ổn định để khẳng định một con số cụ thể theo chiều nào. Điểm cải
+thiện nhất quán cả hai lần là \textit{hướng} của FGL (luôn tốt hơn hoặc xấp xỉ Baseline, không
+đảo chiều mạnh), việc bệnh nhân có Baseline yếu luôn được FGL cải thiện nhiều hơn bệnh nhân có
+Baseline đã mạnh, và - khi đối chiếu trực tiếp theo từng bệnh nhân với bài báo
+(Hình~\ref{hinh:chbmit-phantich}b) - AUC-ROC FGL tái hiện của mỗi bệnh nhân khá nhất quán giữa
+hai lần chạy (0.91-0.95 ở bệnh nhân 1; 0.73-0.74 ở bệnh nhân 3; 0.38-0.39 ở bệnh nhân 5), dù cả
+ba đều thấp hơn số bài báo công bố. Do giới hạn tài nguyên GPU miễn phí trên Kaggle, báo cáo
+chọn test thử sâu trên ba bệnh nhân này thay vì dàn trải trên toàn bộ 12 bệnh nhân mà bài báo
+gốc dùng - tệp kết quả lần chạy 2 có thêm AUC-ROC Teacher của hai bệnh nhân 13, 23
+(Hình~\ref{hinh:chbmit-phantich}a), nhưng chưa chạy đủ Giai đoạn 2-3 để so sánh Baseline/FGL -
+nên các nhận định trên CHB-MIT trong báo cáo này vẫn nên được đọc là bằng chứng ban đầu, dự
+kiến mở rộng thêm bệnh nhân ở báo cáo cuối kỳ. Điểm tích cực là chỉ số AUC bất thường (0.28)
+của Teacher trên máy cá nhân không lặp lại trên Kaggle ở bất kỳ bệnh nhân hay lần chạy nào.
+Việc không tái hiện được AES hoàn toàn là do giới hạn thời gian và việc tải dữ liệu, không phản
+ánh đánh giá về bản thân phương pháp trên bộ dữ liệu này.

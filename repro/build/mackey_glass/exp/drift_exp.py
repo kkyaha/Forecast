@@ -9,19 +9,95 @@ import os
 import argparse
 import pickle
 from collections import deque
+from pathlib import Path
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import numpy as np
+import pandas as pd
 from tqdm import tqdm
+
+import matplotlib
+matplotlib.use("Agg")  # no display needed; script may run headless (Kaggle, CI, ...)
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 
 from utils.utils import RNN, create_time_series_dataset, KL
 
 # —— Device setup ——
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using {device}")
+
+# —— Dataviz palette (validated via dataviz skill's validate_palette.js) ——
+_BLUE, _RED = "#2a78d6", "#e34948"
+_INK, _INK_SEC, _MUTED = "#0b0b0b", "#52514e", "#898781"
+_GRID, _BASELINE_LINE, _SURFACE = "#e1e0d9", "#c3c2b7", "#fcfcfb"
+
+
+def find_thesis_hinh_dir():
+    """Locate docs/mau-latex-tieu-luan/hinh by walking up from this file. Falls back to
+    a local 'figures' folder next to the script (e.g. a fresh clone on Kaggle, where the
+    thesis directory doesn't exist)."""
+    here = Path(__file__).resolve()
+    for ancestor in here.parents:
+        candidate = ancestor / "docs" / "mau-latex-tieu-luan" / "hinh"
+        if candidate.is_dir():
+            return candidate
+    fallback = here.parent / "figures"
+    fallback.mkdir(exist_ok=True)
+    return fallback
+
+
+def plot_horizon_sweep(df, out_dir):
+    """Line chart of MSE reduction (%) vs. forecasting horizon, highlighting any
+    horizon where FGL makes things worse than Baseline."""
+    plt.rcParams.update({
+        "font.family": "DejaVu Sans", "font.size": 10, "text.color": _INK,
+        "axes.edgecolor": _BASELINE_LINE, "axes.labelcolor": _INK_SEC,
+        "xtick.color": _MUTED, "ytick.color": _MUTED,
+        "figure.facecolor": _SURFACE, "axes.facecolor": _SURFACE,
+        "savefig.facecolor": _SURFACE,
+    })
+
+    fig, ax = plt.subplots(figsize=(6.3, 3.6))
+    ax.set_facecolor(_SURFACE)
+    for spine in ["top", "right"]:
+        ax.spines[spine].set_visible(False)
+    ax.spines["bottom"].set_color(_BASELINE_LINE)
+    ax.spines["left"].set_color(_BASELINE_LINE)
+    ax.tick_params(axis="both", length=0)
+    ax.grid(axis="y", color=_GRID, linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+
+    ax.axhline(0, color=_BASELINE_LINE, linewidth=1, zorder=1)
+    ax.plot(df["horizon"], df["mse_reduction_pct"], color=_BLUE, linewidth=2,
+            marker="o", markersize=5, markerfacecolor=_BLUE,
+            markeredgecolor=_SURFACE, markeredgewidth=1, zorder=3)
+
+    neg = df[df["mse_reduction_pct"] < 0]
+    if len(neg):
+        ax.scatter(neg["horizon"], neg["mse_reduction_pct"], s=70, facecolor=_RED,
+                   edgecolor=_SURFACE, linewidth=1, zorder=4)
+        for _, r in neg.iterrows():
+            ax.annotate(f"h={int(r.horizon)}: {r.mse_reduction_pct:.1f}%",
+                        xy=(r.horizon, r.mse_reduction_pct),
+                        xytext=(r.horizon + 0.4, r.mse_reduction_pct - 4.5),
+                        fontsize=8.5, color=_INK_SEC)
+
+    ax.set_xlabel("Tầm dự báo (horizon)")
+    ax.set_ylabel("Giảm MSE: Baseline → Student (%)")
+    ax.set_xticks(df["horizon"])
+    ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%d%%"))
+    ax.set_title("Quét horizon — Mackey-Glass (Page-Hinkley)", fontsize=10, color=_INK, pad=8)
+
+    fig.tight_layout()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_dir / "kq-mg-horizon.pdf", bbox_inches="tight")
+    fig.savefig(out_dir / "kq-mg-horizon.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[plot] Saved kq-mg-horizon.{{pdf,png}} to {out_dir}")
 
 class EarlyStopper:
     def __init__(self, patience=5, min_delta=1e-4):
@@ -267,6 +343,8 @@ def train_student_model(student_horizon, alpha, num_bins, val_size, test_size,
     print(f"Baseline Test MSE: {baseline_mse:.4f}")
     print(f"Student Test MSE:  {student_mse:.4f}")
 
+    return teacher_mse, baseline_mse, student_mse
+
 
 if __name__ == "__main__":
     '''
@@ -330,8 +408,10 @@ if __name__ == "__main__":
     delta=5.775345
     lambda_thr=7.836623
     '''
+    results = []
     for i in range(2, 16):
-        train_student_model(student_horizon=i,
+        teacher_mse, baseline_mse, student_mse = train_student_model(
+                            student_horizon=i,
                             alpha=0.0,
                             num_bins=25,
                             val_size=0.2,
@@ -346,3 +426,17 @@ if __name__ == "__main__":
                             ph_window=3,
                             ph_retrain_epochs=3,
                             patience=5)
+        results.append({
+            "horizon": i,
+            "teacher_mse": teacher_mse,
+            "baseline_mse": baseline_mse,
+            "student_mse": student_mse,
+            "mse_reduction_pct": (baseline_mse - student_mse) / baseline_mse * 100,
+        })
+
+    df_results = pd.DataFrame(results)
+    df_results.to_csv("horizon_sweep_results.csv", index=False)
+    print("\nSaved raw results to horizon_sweep_results.csv")
+    print(df_results)
+
+    plot_horizon_sweep(df_results, find_thesis_hinh_dir())

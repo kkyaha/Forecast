@@ -1,4 +1,4 @@
-% CHƯƠNG 7 - Rubric: Phân tích mở rộng; Khả năng mở rộng, liên hệ thực tế (1,5 điểm)
+% CHƯƠNG 7 - Rubric: Phân tích mở rộng; Khả năng mở rộng, liên hệ thực tế (1.5 điểm)
 \chapter{Cải tiến và mở rộng}
 \label{chuong:caitien}
 
@@ -86,14 +86,14 @@ như Bảng~\ref{bang:mg-sweep}) với kiến trúc LSTM và GRU.
 		\toprule
 		\textbf{Seed} & \textbf{Teacher MSE} & \textbf{Baseline MSE} & \textbf{Student MSE} & \textbf{Giảm MSE} \\
 		\midrule
-		0  & 4,1850 & 145,4412 & 92,5198 & 36,39\% \\
-		1  & 4,6782 & 138,9365 & 89,1096 & 35,86\% \\
-		2  & 4,6281 & 142,7424 & 94,6453 & 33,70\% \\
-		3  & 4,1689 & 139,3032 & 92,2201 & 33,80\% \\
-		4  & 4,7799 & 143,8094 & 98,7154 & 31,36\% \\
-		42 & 4,4145 & 144,6108 & 97,3967 & 32,65\% \\
+		0  & 4.1850 & 145.4412 & 92.5198 & 36.39\% \\
+		1  & 4.6782 & 138.9365 & 89.1096 & 35.86\% \\
+		2  & 4.6281 & 142.7424 & 94.6453 & 33.70\% \\
+		3  & 4.1689 & 139.3032 & 92.2201 & 33.80\% \\
+		4  & 4.7799 & 143.8094 & 98.7154 & 31.36\% \\
+		42 & 4.4145 & 144.6108 & 97.3967 & 32.65\% \\
 		\midrule
-		\textbf{Trung bình} & 4,476 & 142,477 & 94,101 & \textbf{33,96\% (độ lệch chuẩn 1,74)} \\
+		\textbf{Trung bình} & 4.476 & 142.477 & 94.101 & \textbf{33.96\% (độ lệch chuẩn 1.74)} \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -105,14 +105,14 @@ như Bảng~\ref{bang:mg-sweep}) với kiến trúc LSTM và GRU.
 		\toprule
 		\textbf{Seed} & \textbf{Teacher MSE} & \textbf{Baseline MSE} & \textbf{Student MSE} & \textbf{Giảm MSE} \\
 		\midrule
-		0  & 4,4406 & 143,1596 & 98,4052 & 31,26\% \\
-		1  & 4,5018 & 142,7224 & 98,0985 & 31,27\% \\
-		2  & 4,2662 & 140,9470 & 94,1331 & 33,21\% \\
-		3  & 4,2195 & 146,1191 & 97,3077 & 33,41\% \\
-		4  & 4,4276 & 143,0985 & 87,6893 & 38,72\% \\
-		42 & 4,7373 & 142,0975 & 98,7189 & 30,53\% \\
+		0  & 4.4406 & 143.1596 & 98.4052 & 31.26\% \\
+		1  & 4.5018 & 142.7224 & 98.0985 & 31.27\% \\
+		2  & 4.2662 & 140.9470 & 94.1331 & 33.21\% \\
+		3  & 4.2195 & 146.1191 & 97.3077 & 33.41\% \\
+		4  & 4.4276 & 143.0985 & 87.6893 & 38.72\% \\
+		42 & 4.7373 & 142.0975 & 98.7189 & 30.53\% \\
 		\midrule
-		\textbf{Trung bình} & 4,432 & 142,197 & 95,726 & \textbf{33,07\% (độ lệch chuẩn 2,74)} \\
+		\textbf{Trung bình} & 4.432 & 142.197 & 95.726 & \textbf{33.07\% (độ lệch chuẩn 2.74)} \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -126,9 +126,9 @@ Bảng~\ref{bang:mg-sosanh-kientruc} tổng hợp so sánh ba kiến trúc.
 		\toprule
 		\textbf{Kiến trúc} & \textbf{Giảm MSE trung bình} & \textbf{So với RNN} \\
 		\midrule
-		RNN (gốc tác giả) & 26,42\% (độ lệch chuẩn 3,86) & - \\
-		LSTM & \textbf{33,96\% (độ lệch chuẩn 1,74)} & \textbf{+7,54 điểm \%} \\
-		GRU & \textbf{33,07\% (độ lệch chuẩn 2,74)} & \textbf{+6,65 điểm \%} \\
+		RNN (gốc tác giả) & 26.42\% (độ lệch chuẩn 3.86) & - \\
+		LSTM & \textbf{33.96\% (độ lệch chuẩn 1.74)} & \textbf{+7.54 điểm \%} \\
+		GRU & \textbf{33.07\% (độ lệch chuẩn 2.74)} & \textbf{+6.65 điểm \%} \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -137,7 +137,7 @@ Cả LSTM và GRU đều cải thiện trên toàn bộ sáu seed, không có ng
 mức cải thiện trung bình lẫn độ ổn định (độ lệch chuẩn nhỏ hơn), phù hợp với trực giác rằng cổng
 quên/nhớ riêng của LSTM kiểm soát luồng thông tin tốt hơn trên chuỗi có tính hỗn loạn cao như
 Mackey-Glass. Đáng chú ý, MSE của \textit{Teacher} cũng giảm rõ rệt khi đổi kiến trúc (RNN
-$\approx 5,86$ trung bình $\to$ LSTM $\approx 4,48 \to$ GRU $\approx 4,43$), cho thấy kiến trúc
+$\approx 5.86$ trung bình $\to$ LSTM $\approx 4.48 \to$ GRU $\approx 4.43$), cho thấy kiến trúc
 mạnh hơn giúp cả nhiệm vụ 1-bước của teacher, không chỉ nhiệm vụ $H$-bước của student.
 
 \subsection{Kiểm tra độ bền theo điểm cắt dữ liệu: time-series cross-validation}
@@ -160,26 +160,26 @@ trên cùng seed 42, kết quả trong Bảng~\ref{bang:mg-cv}.
 		\toprule
 		\textbf{Fold (\% dữ liệu)} & \textbf{RNN} & \textbf{LSTM} & \textbf{GRU} \\
 		\midrule
-		Fold 1 (70\%) & 24,39\% & 32,82\% & 27,31\% \\
-		Fold 2 (85\%) & 29,47\% & 32,72\% & 30,32\% \\
-		Fold 3 (100\%) & 25,10\% & 32,65\% & 30,53\% \\
+		Fold 1 (70\%) & 24.39\% & 32.82\% & 27.31\% \\
+		Fold 2 (85\%) & 29.47\% & 32.72\% & 30.32\% \\
+		Fold 3 (100\%) & 25.10\% & 32.65\% & 30.53\% \\
 		\midrule
-		\textbf{Trung bình} & 26,32\% (độ lệch chuẩn 2,25) & \textbf{32,73\% (độ lệch chuẩn 0,07)} & 29,38\% (độ lệch chuẩn 1,47) \\
+		\textbf{Trung bình} & 26.32\% (độ lệch chuẩn 2.25) & \textbf{32.73\% (độ lệch chuẩn 0.07)} & 29.38\% (độ lệch chuẩn 1.47) \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
 Fold 3 (100\% dữ liệu) dùng đúng cấu hình của ``lần chạy chuẩn'' seed 42
 (Chương~\ref{chuong:taihien}), nên kết quả ở dòng này khớp \textit{chính xác từng số lẻ} với
-Bảng~\ref{bang:mg-chuan}, \ref{bang:mg-lstm} và \ref{bang:mg-gru} (ví dụ RNN 25,10\%, LSTM
-32,65\%, GRU 30,53\%) - một cách kiểm chứng chéo cho thấy thực nghiệm cross-validation được
+Bảng~\ref{bang:mg-chuan}, \ref{bang:mg-lstm} và \ref{bang:mg-gru} (ví dụ RNN 25.10\%, LSTM
+32.65\%, GRU 30.53\%) - một cách kiểm chứng chéo cho thấy thực nghiệm cross-validation được
 cài đặt đúng, không có lỗi âm thầm làm lệch số liệu.
 
 Kết quả quan trọng nhất: \textbf{cả ba kiến trúc đều cải thiện dương trên cả ba fold}, không
 có trường hợp nào FGL làm tệ hơn baseline khi đổi điểm chia dữ liệu - khác với thực nghiệm
 quét horizon ở Bảng~\ref{bang:mg-drift}, nơi horizon=2 là ngoại lệ âm. Đáng chú ý hơn,
-\textbf{LSTM có độ lệch chuẩn rất nhỏ giữa các fold (0,07 điểm \%)}, nhỏ hơn nhiều so với RNN
-(2,25) và GRU (1,47) - cho thấy mức cải thiện của LSTM không chỉ ổn định qua các seed khởi tạo
+\textbf{LSTM có độ lệch chuẩn rất nhỏ giữa các fold (0.07 điểm \%)}, nhỏ hơn nhiều so với RNN
+(2.25) và GRU (1.47) - cho thấy mức cải thiện của LSTM không chỉ ổn định qua các seed khởi tạo
 khác nhau (mục~\ref{sec:mg-sweep-seed}) mà còn ổn định qua các vị trí chia dữ liệu khác nhau
 trên chuỗi, một bằng chứng bổ sung cho việc chọn LSTM làm cải tiến kiến trúc.
 
