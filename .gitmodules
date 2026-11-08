@@ -1,0 +1,3 @@
+[submodule "repro/upstream/FutureGuidedLearning"]
+	path = repro/upstream/FutureGuidedLearning
+	url = https://github.com/SkyeGunasekaran/FutureGuidedLearning.git
