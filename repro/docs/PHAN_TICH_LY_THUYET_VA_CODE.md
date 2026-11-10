@@ -247,8 +247,8 @@ Hai lựa chọn, định nghĩa ở `repro/build/CHBMIT/models/model.py`:
 
 ### 3.5 Trạng thái tái hiện trên máy này (quan trọng — nêu trong phần "Hạn chế" của báo cáo)
 
-- ✅ **Dữ liệu**: patient 1 đã tải xong (1.6GB `.edf`).
-- ✅ **Stage 1 (Teacher — seizure detection)**: đã train xong, checkpoint lưu tại
+- [Đã xong] **Dữ liệu**: patient 1 đã tải xong (1.6GB `.edf`).
+- [Đã xong] **Stage 1 (Teacher — seizure detection)**: đã train xong, checkpoint lưu tại
   `pytorch_models/Patient_1_detection`. **Nhưng AUC-ROC đo được chỉ 0.28** (`Detection_results.txt`)
   — **thấp hơn random (0.5)**, bất thường. Nghi vấn kỹ thuật: `DataLoader` huấn luyện dùng
   `shuffle=False` (`seizure_detection.py`) trong khi dữ liệu train được nối theo thứ tự
@@ -258,7 +258,7 @@ Hai lựa chọn, định nghĩa ở `repro/build/CHBMIT/models/model.py`:
   forgetting giữa batch), **rất có thể là nguyên nhân** AUC thấp bất thường — *nhưng chưa
   chạy lại để xác nhận giả thuyết này*, cần ghi rõ "nghi vấn, chưa kiểm chứng" nếu đưa vào
   báo cáo.
-- ❌ **Stage 2 (Baseline) / Stage 3 (Student FGL)**: **chưa hoàn thành** — crash giữa lúc
+- [Chưa xong] **Stage 2 (Baseline) / Stage 3 (Student FGL)**: **chưa hoàn thành** — crash giữa lúc
   build cache `cachedir-student/` (xử lý STFT cho toàn bộ EEG patient 1). Bằng chứng: không
   tiến trình Python nào còn chạy, không crash report hệ thống, nhưng **swap đã dùng
   11.8/13.3GB** trên máy chỉ có **16GB RAM** ngay sau đó — dấu hiệu mạnh của hết bộ nhớ
