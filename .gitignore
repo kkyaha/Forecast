@@ -47,3 +47,7 @@ repro/**/pytorch_models/
 !repro/**/Dataset/segmentation.csv
 !repro/**/Dataset/seizure_summary.csv
 !repro/**/Dataset/special_interictal.csv
+
+# Báo cáo tiểu luận (LaTeX) — chỉ giữ trên máy, không đưa lên repo
+docs/mau-latex-tieu-luan/
+docs/mau-latex-tieu-luan.zip
