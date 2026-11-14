@@ -525,3 +525,113 @@ Hai cách gộp:
   chắc chắn — cần chạy lại nhiều lần hơn cho từng bệnh nhân, và mở rộng sang các bệnh nhân khác
   trong danh sách 12 bệnh nhân mặc định của tác giả, mới có thể so sánh công bằng với con số
   44,8% (có thể được tính trên toàn bộ hoặc phần lớn 12 bệnh nhân này).
+
+---
+
+## Đính chính và bổ sung cho báo cáo cuối kỳ (13/11/2026)
+
+### 1. Đọc nhầm `results_run2_full/FGL_results.txt`
+
+`FGL_CHBMIT.py` ghi **danh sách AUC-ROC của từng trial** (`auc_list.append(auc_test)`), không
+phải `[FPR, Sensitivity, AUC]` như `Prediction_results.txt`. Notebook
+`phantich_ketqua_mackeyglass.ipynb` trước đây lấy `vals[2]` (= trial 3) làm "AUC Student". Đã
+sửa thành trung bình 3 trial và chạy lại notebook (hình `kq-chbmit-phantich` đã cập nhật).
+
+| Bệnh nhân | Baseline L2 | Student L2 (cũ, trial 3) | Student L2 (đúng, TB 3 trial) | Tăng (đúng) |
+|---|---|---|---|---|
+| 1 | 0,6825 | 0,9533 | **0,7071** (0,57; 0,60; 0,95) | +3,6% |
+| 3 | 0,3905 | 0,7377 | **0,5667** (0,45; 0,51; 0,74) | +45,1% |
+| 5 | 0,0431 | 0,3849 | **0,5695** (0,99; 0,34; 0,38) | +1221,1% |
+| **TB** | 0,3720 | 0,6919 (+86,0%) | **0,6144** | **+65,2%** |
+
+Gộp trial cả hai lần chạy (TB của TB từng bệnh nhân): Baseline 0,4624 → FGL 0,6609, **+42,9%**.
+Mann-Whitney U theo bệnh nhân: P1 p=0,75; P3 p=0,026; P5 p=0,026; gộp 24 trial p=0,12.
+
+### 2. `lookback_window` mặc định = 1
+
+`base_exp.py --lookback_window` mặc định 1; mọi lần chạy đều dùng mặc định → mỗi mẫu là chuỗi
+dài 1 bước. Lợi ích LSTM/GRU vì vậy không đến từ chống vanishing gradient theo thời gian.
+
+### 3. LSTM trong `CNN_LSTM_Model` chạy dọc chiều batch
+
+Sau `flatten`, tensor 2 chiều `(B, 1920)` vào `nn.LSTM(batch_first=True)` bị PyTorch coi là
+chuỗi unbatched dài B. Kiểm chứng: 4 mẫu ngẫu nhiên, chạy cả batch vs từng mẫu ở `eval()` —
+uni: mẫu 0 trùng, các mẫu sau lệch (max ~4,4e-3); bi: mọi mẫu lệch. → Không chạy thực nghiệm
+`--bidirectional` (có nguy cơ rò rỉ giữa các mẫu test); đề xuất giữ trục thời gian trước LSTM.
+
+### 4. Kiểm định thống kê Mackey-Glass (6 seed ghép cặp)
+
+| Kiến trúc | Giảm MSE, KTC 95% | p (t ghép cặp) | p (Wilcoxon) | Số tham số |
+|---|---|---|---|---|
+| RNN | 26,42% [21,98; 30,86] | 8,7e-5 | 0,031 | 72.754 |
+| LSTM | 33,96% [31,96; 35,96] | 1,2e-7 | 0,031 | 222.130 |
+| GRU | 33,07% [29,92; 36,22] | 1,5e-6 | 0,031 | 172.338 |
+
+LSTM vs RNN p=0,006; GRU vs RNN p=0,029; LSTM vs GRU p=0,65 (t ghép cặp trên mức giảm MSE).
+
+---
+
+## Lần chạy 8 — Phân tích loại bỏ trên Mackey-Glass (14/11/2026)
+
+**Phạm vi: chỉ Mackey-Glass.** Không suy rộng sang CHB-MIT.
+
+### Sự cố phát hiện trước khi chạy: `--temperature` mặc định bị đổi thành 2
+
+Working tree có một thay đổi chưa commit đổi default `--temperature` của `exp/base_exp.py`
+từ 4 (giá trị của tác giả, dùng cho mọi số liệu trong báo cáo) thành 2. Với T=2, seed 42 cho
+Student MSE 117,26 thay vì 104,39. Đã trả về 4 và xác nhận lại seed 42 ra đúng từng chữ số
+(5,4391 / 139,3832 / 104,3942).
+
+### Thay đổi code (mặc định giữ nguyên hành vi gốc)
+
+- `train_student_model(..., teacher_epochs=None, return_preds=False, label_smoothing=0.0)`.
+  `label_smoothing` chỉ áp dụng cho loss của Baseline.
+- `exp/ablation_exp.py`: chạy một cấu hình và ghi thêm một dòng vào `results/<exp>.csv`.
+- `exp/analyze_ablation.py`: tính các dự báo đơn giản, chẩn đoán dự đoán, bảng và hình
+  `hinh/kq-mackeyglass-ablation.(pdf|png)`.
+
+Lệnh (từ `repro/build/mackey_glass/`, `PYTHONPATH=.:exp`):
+```
+python exp/ablation_exp.py --exp lookback --arch {rnn,lstm,gru} --lookback 10 --seeds S   # S ∈ 0..4,42
+python exp/ablation_exp.py --exp teacher --arch rnn --teacher_epochs {1,2,5,10} --seeds S  # S ∈ 0,1,2
+python exp/ablation_exp.py --exp alpha --arch rnn --alpha {0,0.25,0.75,1} --seeds S        # S ∈ 0,1,2
+python exp/ablation_exp.py --exp smooth --arch rnn --label_smoothing {0.1,0.3,0.5} --seeds S
+python exp/ablation_exp.py --exp diag --arch {rnn,lstm} --seeds 42
+python exp/analyze_ablation.py
+```
+
+### Kết quả chính
+
+**Đơn vị MSE**: `evaluate()` tính MSE giữa `argmax` (chỉ số bin 0..49) và bin của nhãn ⇒
+đơn vị bin². 1 bin ≈ 0,0188; std của chuỗi ≈ 12 bin.
+
+| Phương pháp (H=5, lookback=1, tập test) | MSE (bin²) |
+|---|---|
+| Đoán hằng số (TB train) | 146,51 |
+| Baseline RNN (6 seed) | 143,92 |
+| Student FGL RNN (6 seed) | 105,66 |
+| Persistence | 70,65 |
+| Hồi quy tuyến tính 1 biến | 62,42 |
+| Hồi quy tuyến tính 10 biến | 10,11 |
+
+Chẩn đoán seed 42 (RNN): Baseline corr(dự đoán, thật) = 0,61, 42% dự đoán rơi vào cùng 1 bin.
+
+**Lookback 10 (6 seed)**: FGL làm tệ hơn — RNN B 7,52 / S 12,62 (0/6, p=0,0007);
+LSTM 4,88 / 7,97 (0/6, p=0,012); GRU 4,73 / 8,14 (2/6, p=0,29, seed 1 Student hỏng MSE 21,85).
+
+**Làm yếu teacher (RNN, seed 0,1,2)**: 1 epoch → giảm 34,8%; 2 → 32,0%; 5 → 28,5%; 10 → 28,5%;
+20 → 27,9%. Teacher kém hơn KHÔNG làm FGL kém đi (Spearman ρ=0,35, p=0,20, n=15).
+Lưu ý: dropout dùng chung RNG nên Baseline đổi nhẹ theo teacher_epochs (137,7–146,1).
+
+**Quét α (RNN, seed 0,1,2)**: α=0 → 36,2%; 0,25 → 34,1%; 0,5 → 27,9%; 0,75 → 17,7%;
+1 → 1,1% ± 7,0 (≈0, kiểm tra cài đặt đạt). Baseline giống hệt nhau giữa các α.
+
+**Diễn giải (chỉ cho Mackey-Glass, lookback=1)**: lợi ích đến từ phân phối mềm của teacher
+thay cho nhãn cứng, khớp lập luận "distilling uncertainty" của bài báo; giả thuyết "teacher
+chính xác hơn ⇒ FGL tốt hơn" (của báo cáo, không phải của tác giả) không được ủng hộ trên
+Mackey-Glass, còn mở trên CHB-MIT.
+
+**Label smoothing cho Baseline (RNN, seed 0,1,2, không teacher)**: ε=0,1 → 142,21 (giảm 2,0%);
+ε=0,3 → 145,26 (−0,1%); ε=0,5 → 137,93 (4,8%), so với FGL 104,42 (27,9%). ⇒ Làm mềm đồng đều
+KHÔNG giải thích được lợi ích FGL; thứ teacher cho là phân phối mềm *theo từng đầu vào*.
+Teacher 1 epoch (MSE 13,6) vẫn tốt hơn Baseline ~10 lần ⇒ chưa thử tới vùng teacher thực sự kém.

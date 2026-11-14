@@ -111,7 +111,13 @@ class EarlyStopper:
 def train_student_model(student_horizon, alpha, num_bins,
                         val_size, test_size, epochs,
                         temperature, lookback_window, batch_size,
-                        patience=5, seed=42, arch='rnn', external_data=None):
+                        patience=5, seed=42, arch='rnn', external_data=None,
+                        teacher_epochs=None, return_preds=False, label_smoothing=0.0):
+    # teacher_epochs: train the teacher for a different number of epochs than baseline/student
+    #   (None = same as `epochs`, the author's behaviour). Used to deliberately weaken the teacher.
+    # return_preds: also return test-set predictions/targets (bin indices) of all three models.
+    # label_smoothing: label smoothing for the *baseline's* training loss only (0 = author's behaviour).
+    #   Used to test whether FGL's gain is a soft-label regularisation effect.
     torch.manual_seed(seed)
     print(f"\nTraining | Horizon={student_horizon} Alpha={alpha} "
           f"Num bins={num_bins} Val size={val_size} Test size={test_size}"
@@ -156,12 +162,13 @@ def train_student_model(student_horizon, alpha, num_bins,
 
     mse   = nn.MSELoss()
     celoss= nn.CrossEntropyLoss()
+    celoss_b = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
 
     # ---- Teacher loop with early stopping ----
     teacher     = RNN(lookback_window, hidden_size, output_size, num_layers, cell_type=arch).to(device)
     opt_t       = torch.optim.Adam(teacher.parameters(), lr=lr)
     stop_t      = EarlyStopper(patience=patience)
-    for epoch in range(epochs):
+    for epoch in range(epochs if teacher_epochs is None else teacher_epochs):
         teacher.train()
         for _, x, y in teacher_train:
             x = x.float().to(device).view(-1,1,lookback_window)
@@ -198,7 +205,7 @@ def train_student_model(student_horizon, alpha, num_bins,
             x = x.float().to(device).view(-1,1,lookback_window)
             y = y.long().to(device)
             out = baseline(x)
-            loss = celoss(out, y)
+            loss = celoss_b(out, y)
             opt_b.zero_grad(); loss.backward(); opt_b.step()
 
         # validate
@@ -257,20 +264,31 @@ def train_student_model(student_horizon, alpha, num_bins,
     print(f"[Student] Best Val CE = {stop_s.best_loss:.4f}")
 
     # final test metrics are in MSE
-    def evaluate(model, loader):
+    # NOTE: MSE is computed between predicted and true *bin indices* (0..num_bins-1),
+    # not in the original units of the series (1 bin ~ range(y_train)/(num_bins-2)).
+    preds = {}
+    def evaluate(model, loader, name):
         model.eval()
         tot = 0.
+        P, Y = [], []
         with torch.no_grad():
             for _, x, y in loader:
                 x = x.float().to(device).view(-1,1,lookback_window)
-                tot += mse(model(x).argmax(dim=1).float(), y.float().to(device).squeeze(-1)).item()
+                p = model(x).argmax(dim=1).float()
+                t = y.float().to(device).view(-1)
+                tot += mse(p, t).item()
+                P.append(p.cpu().numpy()); Y.append(t.cpu().numpy())
+        preds[name] = (np.concatenate(P), np.concatenate(Y))
         return tot / len(loader)
 
-    Tmse = evaluate(teacher, teacher_test); print(f"Teacher Test MSE:  {Tmse:.4f}")
-    Bmse = evaluate(baseline, student_test); print(f"Baseline Test MSE: {Bmse:.4f}")
-    Smse = evaluate(student, student_test); print(f"Student Test MSE:  {Smse:.4f}")
+    Tmse = evaluate(teacher, teacher_test, "teacher"); print(f"Teacher Test MSE:  {Tmse:.4f}")
+    Bmse = evaluate(baseline, student_test, "baseline"); print(f"Baseline Test MSE: {Bmse:.4f}")
+    Smse = evaluate(student, student_test, "student"); print(f"Student Test MSE:  {Smse:.4f}")
 
-    return {"teacher": Tmse, "baseline": Bmse, "student": Smse}
+    out = {"teacher": Tmse, "baseline": Bmse, "student": Smse}
+    if return_preds:
+        out["preds"] = preds
+    return out
 
 # … rest of your __main__ unchanged …
 
